@@ -16,7 +16,7 @@ export interface RegisterData {
   city?: string;
   address?: string;
 
-  bio?: string;
+  profissional_identification?: string;
   category?: string;
 }
 

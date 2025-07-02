@@ -6,9 +6,9 @@ import AppNavigator from './AppNavigator';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
 const Navigation: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, initializing } = useAuth();
 
-  if (loading) {
+  if (initializing) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" />
