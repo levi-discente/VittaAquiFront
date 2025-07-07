@@ -1,30 +1,32 @@
 import React, { useState } from 'react';
 import {
-  View,
-  StyleSheet,
+  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Dimensions
+  StyleSheet,
+  View,
+  useWindowDimensions,
 } from 'react-native';
 import {
-  Text,
-  TextField,
+  Layout,
+  Card,
+  Input,
+  Select,
+  SelectItem,
+  IndexPath,
+  RadioGroup,
+  Radio,
   Button,
-  Colors,
-  Picker,
-  Card
-} from 'react-native-ui-lib';
+  Text
+} from '@ui-kitten/components';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../../hooks/useAuth';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { maskCPF, maskCEP, maskPhone, validateCPF } from '@/utils/forms';
-import { notifySuccess, notifyError } from '@/utils/notify';
-
-const { width } = Dimensions.get('window');
-const CARD_WIDTH = Math.min(width * 0.9, 400);
+import Logo from '@/assets/images/icon_name.svg';
 
 const categories = [
   { label: 'Médico', value: 'doctor' },
@@ -40,12 +42,18 @@ const statesBR = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const { signUp, loading } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const { width, height } = useWindowDimensions();
+  const CARD_WIDTH = Math.min(width * 0.9, 400);
+  const CARD_HEIGHT = Math.min(height * 0.85, 600);
+
+  // Para Select no mobile
+  const [ufIndex, setUfIndex] = useState(new IndexPath(0));
+  const [catIndex, setCatIndex] = useState(new IndexPath(0));
 
   const schema = Yup.object().shape({
     name: Yup.string().required('Nome obrigatório'),
@@ -62,325 +70,389 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       .oneOf([Yup.ref('password')], 'Senhas não conferem')
       .required('Confirme a senha'),
     role: Yup.string().oneOf(['patient', 'professional']).required(),
-    profissional_identification: Yup.string().when('role', { is: 'professional', then: s => s.required('Credencial obrigatória') }),
-    category: Yup.string().when('role', { is: 'professional', then: s => s.required('Categoria obrigatória') }),
+    profissional_identification: Yup.string().when('role', {
+      is: 'professional', then: s => s.required('Credencial obrigatória')
+    }),
+    category: Yup.string().when('role', {
+      is: 'professional', then: s => s.required('Categoria obrigatória')
+    }),
   });
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.select({ ios: 'padding', android: undefined })}
-    >
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Card style={styles.card}>
-          <Text text60 marginB-20 color={Colors.dark60}>
-            Cadastro
-          </Text>
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.select({ ios: 'padding', android: undefined })}
+      >
+        <ScrollView contentContainerStyle={styles.scroll}>
+          <Card style={[styles.card, { width: CARD_WIDTH, minHeight: CARD_HEIGHT }]}>
+            <Text category="h5" style={styles.title}>Cadastro</Text>
 
 
-          <Formik
-            initialValues={{
-              name: '', cpf: '', cep: '', uf: '', city: '', address: '',
-              email: '', password: '', confirmPassword: '',
-              phone: '', role: 'patient',
-              profissional_identification: '', category: ''
-            }}
-            validationSchema={schema}
-            validateOnChange={false}
-            validateOnBlur={true}
+            <View style={styles.logoContainer}>
+              <Logo
+                width={CARD_WIDTH * 0.5}
+                height={CARD_WIDTH * 0.5}
+              />
+            </View>
 
-            onSubmit={async (values, { setSubmitting }) => {
-              try {
-                const payload = {
-                  name: values.name,
-                  email: values.email,
-                  password: values.password,
-                  role: values.role as 'patient' | 'professional',
-                  cpf: values.cpf.replace(/\D/g, ''),
-                  phone: values.phone.replace(/\D/g, '') || undefined,
-                  cep: values.cep.replace(/\D/g, ''),
-                  uf: values.uf, city: values.city, address: values.address,
-                  profissional_identification: values.role === 'professional' ? values.profissional_identification : undefined,
-                  category: values.role === 'professional' ? values.category : undefined
-                };
-                await signUp(payload);
-                notifySuccess('Cadastro realizado com sucesso');
-              } catch (err: any) {
-                notifyError(err.response?.data?.error || 'Erro ao cadastrar');
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-          >
-            {({ values, errors, touched, handleChange, handleBlur, setFieldValue, handleSubmit, validateForm, setErrors, isSubmitting }) => {
-              const fieldsByStep: Record<number, Array<keyof typeof values>> = {
-                1: ['email', 'password', 'confirmPassword'],
-                2: ['name', 'cpf', 'phone'],
-                3: ['cep', 'uf', 'city', 'address'],
-                4: ['role', 'profissional_identification', 'category']
-              };
 
-              const nextStep = async () => {
+            <Formik
+              initialValues={{
+                name: '', cpf: '', cep: '', uf: '', city: '', address: '',
+                email: '', password: '', confirmPassword: '',
+                phone: '', role: 'patient',
+                profissional_identification: '', category: ''
+              }}
+              validationSchema={schema}
+              validateOnChange={false}
+              validateOnBlur={true}
+              onSubmit={async (values, { setSubmitting }) => {
                 try {
-                  // valida cada campo individualmente
-                  await Promise.all(
-                    fieldsByStep[step].map(field =>
-                      schema.validateAt(field as string, values)
-                    )
-                  );
-                  // casting porque step+1 é number
-                  setStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
-                } catch (err: any) {
-                  const formErrors: Record<string, string> = {};
-                  err.inner.forEach((e: Yup.ValidationError) => {
-                    if (e.path) formErrors[e.path] = e.message;
-                  });
-                  setErrors(formErrors);
+                  const payload = {
+                    name: values.name,
+                    email: values.email,
+                    password: values.password,
+                    role: values.role as 'patient' | 'professional',
+                    cpf: values.cpf.replace(/\D/g, ''),
+                    phone: values.phone.replace(/\D/g, '') || undefined,
+                    cep: values.cep.replace(/\D/g, ''),
+                    uf: values.uf,
+                    city: values.city,
+                    address: values.address,
+                    profissional_identification:
+                      values.role === 'professional'
+                        ? values.profissional_identification
+                        : undefined,
+                    category:
+                      values.role === 'professional'
+                        ? values.category
+                        : undefined
+                  };
+                  await signUp(payload);
+                } catch {
+                  // TODO: tratar erro de requisição
+                } finally {
+                  setSubmitting(false);
                 }
-              };
+              }}
+            >
+              {({
+                values, errors, touched,
+                handleChange, handleBlur,
+                setFieldValue, handleSubmit,
+                setErrors, isSubmitting
+              }) => {
+                const fieldsByStep: Record<number, Array<keyof typeof values>> = {
+                  1: ['email', 'password', 'confirmPassword'],
+                  2: ['name', 'cpf'],
+                  3: ['cep', 'uf', 'city', 'address'],
+                  4: ['role', 'profissional_identification', 'category']
+                };
 
-              const prevStep = () => setStep((prev) => Math.max(prev - 1, 1) as 1 | 2 | 3 | 4);
-              return (
-                <>
-                  {step === 1 && (
-                    <>
-                      <TextField
-                        placeholder="Email"
-                        keyboardType="email-address"
-                        value={values.email}
-                        onChangeText={t => setFieldValue('email', t.trim().toLowerCase())}
-                        onBlur={handleBlur('email')}
-                        error={!!(touched.email && errors.email)}
-                        style={styles.input}
-                      />
-                      {!!errors.email && <Text text90 red10>{errors.email}</Text>}
+                const nextStep = async () => {
+                  try {
+                    await Promise.all(
+                      fieldsByStep[step].map(f => schema.validateAt(f as string, values))
+                    );
+                    setStep(s => (s + 1) as 1 | 2 | 3 | 4);
+                  } catch (err: any) {
+                    const fe: Record<string, string> = {};
+                    if (Array.isArray(err)) {
+                      err.forEach((e: Yup.ValidationError) => {
+                        if (e.path) fe[e.path] = e.message;
+                      });
+                    } else if (err instanceof Yup.ValidationError) {
+                      if (err.path) fe[err.path] = err.message;
+                    }
+                    setErrors(fe);
+                  }
+                };
 
-                      <TextField
-                        placeholder="Senha"
-                        secureTextEntry
-                        value={values.password}
-                        onChangeText={handleChange('password')}
-                        onBlur={handleBlur('password')}
-                        error={!!(touched.password && errors.password)}
-                        style={styles.input}
-                      />
-                      {!!errors.password && <Text text90 red10>{errors.password}</Text>}
+                const prevStep = () => setStep(s => Math.max(s - 1, 1) as 1 | 2 | 3 | 4);
 
-                      <TextField
-                        placeholder="Confirme a senha"
-                        secureTextEntry
-                        value={values.confirmPassword}
-                        onChangeText={handleChange('confirmPassword')}
-                        onBlur={handleBlur('confirmPassword')}
-                        error={!!(touched.confirmPassword && errors.confirmPassword)}
-                        style={styles.input}
-                      />
-                      {!!errors.confirmPassword && <Text text90 red10>{errors.confirmPassword}</Text>}
-                    </>
-                  )}
-
-                  {step === 2 && (
-                    <>
-                      <TextField
-                        placeholder="Nome completo"
-                        value={values.name}
-                        onChangeText={handleChange('name')}
-                        onBlur={handleBlur('name')}
-                        error={!!(touched.name && errors.name)}
-                        style={styles.input}
-                      />
-                      {!!errors.name && <Text text90 red10>{errors.name}</Text>}
-
-                      <TextField
-                        placeholder="CPF"
-                        keyboardType="numeric"
-                        value={values.cpf}
-                        onChangeText={t => setFieldValue('cpf', maskCPF(t))}
-                        onBlur={handleBlur('cpf')}
-                        error={!!(touched.cpf && errors.cpf)}
-                        style={styles.input}
-                      />
-                      {!!errors.cpf && <Text text90 red10>{errors.cpf}</Text>}
-                      <TextField
-                        text70
-                        placeholder="Telefone"
-                        keyboardType="phone-pad"
-                        value={values.phone}
-                        onChangeText={text => setFieldValue('phone', maskPhone(text))}
-                        onBlur={handleBlur('phone')}
-                        floatingPlaceholder
-                        style={styles.input}
-                      />
-                    </>
-                  )}
-
-                  {step === 3 && (
-                    <>
-                      <TextField
-                        placeholder="CEP"
-                        keyboardType="numeric"
-                        value={values.cep}
-                        onChangeText={t => setFieldValue('cep', maskCEP(t))}
-                        onBlur={handleBlur('cep')}
-                        error={!!(touched.cep && errors.cep)}
-                        style={styles.input}
-                      />
-                      {!!errors.cep && <Text text90 red10>{errors.cep}</Text>}
-
-                      {/* UF como dropdown */}
-                      <Picker
-                        placeholder="UF"
-                        value={values.uf}
-                        onChange={item => setFieldValue('uf', item.value)}
-                        style={styles.picker}
-                      >
-                        {statesBR.map(s => (
-                          <Picker.Item key={s} value={s} label={s} />
-                        ))}
-                      </Picker>
-                      {!!(touched.uf && errors.uf) && <Text text90 red10>{errors.uf}</Text>}
-
-                      <TextField
-                        placeholder="Cidade"
-                        value={values.city}
-                        onChangeText={handleChange('city')}
-                        onBlur={handleBlur('city')}
-                        error={!!(touched.city && errors.city)}
-                        style={styles.input}
-                      />
-                      {!!errors.city && <Text text90 red10>{errors.city}</Text>}
-
-                      <TextField
-                        placeholder="Endereço"
-                        value={values.address}
-                        onChangeText={handleChange('address')}
-                        onBlur={handleBlur('address')}
-                        error={!!(touched.address && errors.address)}
-                        style={styles.input}
-                      />
-                      {!!errors.address && <Text text90 red10>{errors.address}</Text>}
-                    </>
-                  )}
-
-                  {step === 4 && (
-                    <>
-
-                      <Text text80 marginT-12>
-                        Tipo de usuário
-                      </Text>
-                      <View style={styles.switchContainer}>
-                        <Button
-                          outline={values.role !== 'patient'}
-                          label="Paciente"
-                          onPress={() => setFieldValue('role', 'patient')}
-                          secondary
-                          marginR-8
+                return (
+                  <Layout level="1" style={styles.form}>
+                    {/* STEP 1 */}
+                    {step === 1 && (
+                      <>
+                        <Input
+                          placeholder="Email"
+                          keyboardType="email-address"
+                          value={values.email}
+                          onChangeText={t => setFieldValue('email', t.trim().toLowerCase())}
+                          onBlur={handleBlur('email')}
+                          status={touched.email && errors.email ? 'danger' : 'basic'}
+                          caption={touched.email && errors.email ? errors.email : undefined}
+                          style={styles.field}
                         />
-                        <Button
-                          outline={values.role !== 'professional'}
-                          label="Profissional"
-                          onPress={() => setFieldValue('role', 'professional')}
-                          secondary
+                        <Input
+                          placeholder="Senha"
+                          secureTextEntry
+                          value={values.password}
+                          onChangeText={handleChange('password')}
+                          onBlur={handleBlur('password')}
+                          status={touched.password && errors.password ? 'danger' : 'basic'}
+                          caption={touched.password && errors.password ? errors.password : undefined}
+                          style={styles.field}
                         />
-                      </View>
+                        <Input
+                          placeholder="Confirme a senha"
+                          secureTextEntry
+                          value={values.confirmPassword}
+                          onChangeText={handleChange('confirmPassword')}
+                          onBlur={handleBlur('confirmPassword')}
+                          status={touched.confirmPassword && errors.confirmPassword ? 'danger' : 'basic'}
+                          caption={touched.confirmPassword && errors.confirmPassword ? errors.confirmPassword : undefined}
+                          style={styles.field}
+                        />
+                      </>
+                    )}
 
-                      {/* Campos de profissional renderizados inline */}
-                      {values.role === 'professional' && (
-                        <>
-                          <TextField
-                            text70
-                            placeholder="credencial / Descrição"
-                            value={values.profissional_identification}
-                            onChangeText={handleChange('profissional_identification')}
-                            onBlur={handleBlur('profissional_identification')}
-                            floatingPlaceholder
-                            style={styles.input}
-                            error={!!(touched.profissional_identification && errors.profissional_identification)}
-                          />
-                          {!!(touched.profissional_identification && errors.profissional_identification) && (
-                            <Text text90 red10>{errors.profissional_identification}</Text>
-                          )}
+                    {/* STEP 2 */}
+                    {step === 2 && (
+                      <>
+                        <Input
+                          placeholder="Nome completo"
+                          value={values.name}
+                          onChangeText={handleChange('name')}
+                          onBlur={handleBlur('name')}
+                          status={touched.name && errors.name ? 'danger' : 'basic'}
+                          caption={touched.name && errors.name ? errors.name : undefined}
+                          style={styles.field}
+                        />
+                        <Input
+                          placeholder="CPF"
+                          keyboardType="numeric"
+                          value={values.cpf}
+                          onChangeText={t => setFieldValue('cpf', maskCPF(t))}
+                          onBlur={handleBlur('cpf')}
+                          status={touched.cpf && errors.cpf ? 'danger' : 'basic'}
+                          caption={touched.cpf && errors.cpf ? errors.cpf : undefined}
+                          style={styles.field}
+                        />
+                        <Input
+                          placeholder="Telefone"
+                          keyboardType="phone-pad"
+                          value={values.phone}
+                          onChangeText={t => setFieldValue('phone', maskPhone(t))}
+                          onBlur={handleBlur('phone')}
+                          style={styles.field}
+                        />
+                      </>
+                    )}
 
+                    {/* STEP 3 */}
+                    {step === 3 && (
+                      <>
+                        <Input
+                          placeholder="CEP"
+                          keyboardType="numeric"
+                          value={values.cep}
+                          onChangeText={t => setFieldValue('cep', maskCEP(t))}
+                          onBlur={handleBlur('cep')}
+                          status={touched.cep && errors.cep ? 'danger' : 'basic'}
+                          caption={touched.cep && errors.cep ? errors.cep : undefined}
+                          style={styles.field}
+                        />
 
-                          <Picker
-                            placeholder="Categoria"
-                            value={values.category}
-                            onChange={item => setFieldValue('category', (item as any).value)}
-                            style={styles.picker}
-                            topBarProps={{ title: 'Selecione categoria' }}
+                        {Platform.OS === 'web' ? (
+                          <View style={styles.field}>
+                            <select
+                              value={values.uf}
+                              onChange={e => {
+                                setFieldValue('uf', e.target.value);
+                                handleBlur('uf');
+                              }}
+                              style={styles.webSelect}
+                            >
+                              <option value="" disabled>Selecione UF</option>
+                              {statesBR.map(s => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                            {touched.uf && errors.uf && (
+                              <Text status="danger" category="c2">{errors.uf}</Text>
+                            )}
+                          </View>
+                        ) : (
+                          <Select
+                            placeholder="Selecione UF"
+                            selectedIndex={ufIndex}
+                            value={ufIndex.row === 0 ? '' : statesBR[ufIndex.row - 1]}
+                            onSelect={index => {
+                              const idx = index as IndexPath;
+                              setUfIndex(idx);
+                              setFieldValue('uf', idx.row === 0 ? '' : statesBR[idx.row - 1]);
+                              handleBlur('uf');
+                            }}
+                            style={styles.field}
+                            data={[
+                              {
+                                title: 'Selecione UF'
+                              },
+                              ...statesBR.map(s => ({ title: s }))
+                            ]}
                           >
-                            {categories.map(c => (
-                              <Picker.Item key={c.value} value={c.value} label={c.label} />
-                            ))}
-                          </Picker>
-                          {!!(touched.category && errors.category) && (
-                            <Text text90 red10>{errors.category}</Text>
-                          )}
-                        </>
+                          </Select>
+                        )}
+
+                        <Input
+                          placeholder="Cidade"
+                          value={values.city}
+                          onChangeText={handleChange('city')}
+                          onBlur={handleBlur('city')}
+                          status={touched.city && errors.city ? 'danger' : 'basic'}
+                          caption={touched.city && errors.city ? errors.city : undefined}
+                          style={styles.field}
+                        />
+                        <Input
+                          placeholder="Endereço"
+                          value={values.address}
+                          onChangeText={handleChange('address')}
+                          onBlur={handleBlur('address')}
+                          status={touched.address && errors.address ? 'danger' : 'basic'}
+                          caption={touched.address && errors.address ? errors.address : undefined}
+                          style={styles.field}
+                        />
+                      </>
+                    )}
+
+                    {/* STEP 4 */}
+                    {step === 4 && (
+                      <>
+                        <Text category="s1" style={styles.label}>Tipo de usuário</Text>
+                        <RadioGroup
+                          selectedIndex={values.role === 'professional' ? 1 : 0}
+                          onChange={idx => {
+                            const role = idx === 0 ? 'patient' : 'professional';
+                            setFieldValue('role', role);
+                          }}
+                          style={styles.field}
+                        >
+                          <Radio>Paciente</Radio>
+                          <Radio>Profissional</Radio>
+                        </RadioGroup>
+
+                        {values.role === 'professional' && (
+                          <>
+                            <Input
+                              placeholder="Credencial / Descrição"
+                              value={values.profissional_identification}
+                              onChangeText={handleChange('profissional_identification')}
+                              onBlur={handleBlur('profissional_identification')}
+                              status={touched.profissional_identification && errors.profissional_identification ? 'danger' : 'basic'}
+                              caption={touched.profissional_identification && errors.profissional_identification ? errors.profissional_identification : undefined}
+                              style={styles.field}
+                            />
+
+                            {Platform.OS === 'web' ? (
+                              <View style={styles.field}>
+                                <select
+                                  value={values.category}
+                                  onChange={e => {
+                                    setFieldValue('category', e.target.value);
+                                    handleBlur('category');
+                                  }}
+                                  style={styles.webSelect}
+                                >
+                                  <option value="" disabled>Selecione categoria</option>
+                                  {categories.map(c => (
+                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                  ))}
+                                </select>
+                                {touched.category && errors.category && (
+                                  <Text status="danger" category="c2">{errors.category}</Text>
+                                )}
+                              </View>
+                            ) : (
+                              <Select
+                                placeholder="Selecione categoria"
+                                selectedIndex={catIndex}
+                                value={catIndex.row === 0 ? '' : categories[catIndex.row - 1].label}
+                                onSelect={index => {
+                                  const idx = index as IndexPath;
+                                  setCatIndex(idx);
+                                  setFieldValue('category', idx.row === 0 ? '' : categories[idx.row - 1].value);
+                                  handleBlur('category');
+                                }}
+                                style={styles.field}
+                              >
+                                <SelectItem title="Selecione categoria" />
+                                {categories.map(c => (
+                                  <SelectItem key={c.value} title={c.label} />
+                                ))}
+                              </Select>
+                            )}
+                          </>
+                        )}
+                      </>
+                    )}
+
+                    <View style={styles.buttonsRow}>
+                      {step > 1 && (
+                        <Button
+                          appearance="outline"
+                          onPress={prevStep}
+                          disabled={isSubmitting || loading}
+                          style={styles.button}
+                        >
+                          Voltar
+                        </Button>
                       )}
-                    </>
-                  )}
-                  <View style={styles.buttonsRow}>
-                    {step > 1 && (
-                      <Button
-                        outline
-                        label="Voltar"
-                        onPress={prevStep}
-                        disabled={isSubmitting || loading}
-                      />
-                    )}
-                    {step < 4 ? (
-                      <Button
-                        label="Próximo"
-                        onPress={nextStep}
-                        disabled={isSubmitting || loading}
-                      />
-                    ) : (
-                      <Button
-                        label="Cadastrar"
-                        onPress={handleSubmit as any}
-                        disabled={isSubmitting || loading}
-                        loading={isSubmitting || loading}
-                      />
-                    )}
-                  </View>
-                </>
-              )
-            }}
-          </Formik>
-        </Card>
-      </ScrollView>
-    </KeyboardAvoidingView>
+                      {step < 4 ? (
+                        <Button
+                          onPress={nextStep}
+                          disabled={isSubmitting || loading}
+                          style={styles.button}
+                        >
+                          Próximo
+                        </Button>
+                      ) : (
+                        <Button
+                          onPress={() => handleSubmit()}
+                          disabled={isSubmitting || loading}
+                          style={styles.button}
+                        >
+                          Cadastrar
+                        </Button>
+                      )}
+                    </View>
+                  </Layout>
+                );
+              }}
+            </Formik>
+          </Card>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  scroll: { alignItems: 'center', paddingVertical: 24 },
-  card: {
-    width: CARD_WIDTH, padding: 24, borderRadius: 8,
-    backgroundColor: Colors.white,
-    shadowColor: Colors.black, shadowOpacity: 0.1,
-    shadowRadius: 8, elevation: 4
+  safe: { flex: 1 },
+  flex: { flex: 1 },
+  scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 24 },
+  card: { padding: 24, borderRadius: 8 },
+  title: { marginBottom: 16 },
+  form: { flex: 1 },
+  field: { marginBottom: 16 },
+  label: { marginVertical: 8 },
+  buttonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
+  button: { flex: 1, marginHorizontal: 4 },
+  webSelect: {
+    width: '100%',
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#c4c4c4',
+    borderRadius: 4,
+    backgroundColor: 'white'
   },
-  logoContainer: { alignItems: 'center', marginBottom: 16 },
-  logo: { width: 100, height: 60 },
-  stepperContainer: { marginBottom: 16 },
-  progressBar: { height: 4, borderRadius: 2 },
-  stepperText: { alignSelf: 'flex-end', marginTop: 4 },
-  input: { marginTop: 12 },
-  picker: { marginTop: 12, borderBottomWidth: 1, borderColor: Colors.grey40 },
-  buttonsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24
+  logoContainer: {
+    alignItems: 'center',
+    marginVertical: 16,
   },
-  switchContainer: {
-    flexDirection: 'row',
-    marginVertical: 12,
-    alignItems: 'center'
-  }
 });
 
-
 export default RegisterScreen;
+

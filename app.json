@@ -8,6 +8,7 @@
     "scheme": "vittaaquifrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true
     },
@@ -20,7 +21,8 @@
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "build": { "babel": { "include": [ "@ui-kitten/components" ] } }
     },
   }
 }
