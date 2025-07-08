@@ -7,6 +7,7 @@ import {
   StyleSheet,
   View,
   useWindowDimensions,
+  Animated,
 } from 'react-native';
 import {
   Layout,
@@ -18,7 +19,7 @@ import {
   RadioGroup,
   Radio,
   Button,
-  Text
+  Text,
 } from '@ui-kitten/components';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -26,7 +27,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { maskCPF, maskCEP, maskPhone, validateCPF } from '@/utils/forms';
-import Logo from '@/assets/images/icon_name.svg';
 
 const categories = [
   { label: 'Médico', value: 'doctor' },
@@ -39,7 +39,7 @@ const categories = [
 const statesBR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ];
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
@@ -51,9 +51,30 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const CARD_WIDTH = Math.min(width * 0.9, 400);
   const CARD_HEIGHT = Math.min(height * 0.85, 600);
 
-  // Para Select no mobile
   const [ufIndex, setUfIndex] = useState(new IndexPath(0));
   const [catIndex, setCatIndex] = useState(new IndexPath(0));
+
+  const [snackbarVisible, setSnackbarVisible] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarOpacity] = useState(new Animated.Value(0));
+
+  const showSnackbar = (message: string) => {
+    setSnackbarMessage(message);
+    setSnackbarVisible(true);
+    Animated.timing(snackbarOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setTimeout(() => {
+        Animated.timing(snackbarOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start(() => setSnackbarVisible(false));
+      }, 3000);
+    });
+  };
 
   const schema = Yup.object().shape({
     name: Yup.string().required('Nome obrigatório'),
@@ -71,10 +92,10 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       .required('Confirme a senha'),
     role: Yup.string().oneOf(['patient', 'professional']).required(),
     profissional_identification: Yup.string().when('role', {
-      is: 'professional', then: s => s.required('Credencial obrigatória')
+      is: 'professional', then: s => s.required('Credencial obrigatória'),
     }),
     category: Yup.string().when('role', {
-      is: 'professional', then: s => s.required('Categoria obrigatória')
+      is: 'professional', then: s => s.required('Categoria obrigatória'),
     }),
   });
 
@@ -88,25 +109,25 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           <Card style={[styles.card, { width: CARD_WIDTH, minHeight: CARD_HEIGHT }]}>
             <Text category="h5" style={styles.title}>Cadastro</Text>
 
-
-            <View style={styles.logoContainer}>
-              <Logo
-                width={CARD_WIDTH * 0.5}
-                height={CARD_WIDTH * 0.5}
-              />
-            </View>
-
-
             <Formik
               initialValues={{
-                name: '', cpf: '', cep: '', uf: '', city: '', address: '',
-                email: '', password: '', confirmPassword: '',
-                phone: '', role: 'patient',
-                profissional_identification: '', category: ''
+                name: '',
+                cpf: '',
+                cep: '',
+                uf: '',
+                city: '',
+                address: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                phone: '',
+                role: 'patient',
+                profissional_identification: '',
+                category: '',
               }}
               validationSchema={schema}
               validateOnChange={false}
-              validateOnBlur={true}
+              validateOnBlur
               onSubmit={async (values, { setSubmitting }) => {
                 try {
                   const payload = {
@@ -127,33 +148,41 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                     category:
                       values.role === 'professional'
                         ? values.category
-                        : undefined
+                        : undefined,
                   };
                   await signUp(payload);
-                } catch {
-                  // TODO: tratar erro de requisição
+                  showSnackbar('Cadastro realizado com sucesso!');
+                } catch (error: any) {
+                  showSnackbar("Cadastro :" + error.message || 'Erro ao cadastrar');
                 } finally {
                   setSubmitting(false);
                 }
               }}
             >
               {({
-                values, errors, touched,
-                handleChange, handleBlur,
-                setFieldValue, handleSubmit,
-                setErrors, isSubmitting
+                values,
+                errors,
+                touched,
+                handleChange,
+                handleBlur,
+                setFieldValue,
+                handleSubmit,
+                setErrors,
+                isSubmitting,
               }) => {
                 const fieldsByStep: Record<number, Array<keyof typeof values>> = {
                   1: ['email', 'password', 'confirmPassword'],
                   2: ['name', 'cpf'],
                   3: ['cep', 'uf', 'city', 'address'],
-                  4: ['role', 'profissional_identification', 'category']
+                  4: ['role', 'profissional_identification', 'category'],
                 };
 
                 const nextStep = async () => {
                   try {
                     await Promise.all(
-                      fieldsByStep[step].map(f => schema.validateAt(f as string, values))
+                      fieldsByStep[step].map(f =>
+                        schema.validateAt(f as string, values)
+                      )
                     );
                     setStep(s => (s + 1) as 1 | 2 | 3 | 4);
                   } catch (err: any) {
@@ -169,7 +198,8 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                   }
                 };
 
-                const prevStep = () => setStep(s => Math.max(s - 1, 1) as 1 | 2 | 3 | 4);
+                const prevStep = () =>
+                  setStep(s => Math.max(s - 1, 1) as 1 | 2 | 3 | 4);
 
                 return (
                   <Layout level="1" style={styles.form}>
@@ -180,7 +210,9 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                           placeholder="Email"
                           keyboardType="email-address"
                           value={values.email}
-                          onChangeText={t => setFieldValue('email', t.trim().toLowerCase())}
+                          onChangeText={t =>
+                            setFieldValue('email', t.trim().toLowerCase())
+                          }
                           onBlur={handleBlur('email')}
                           status={touched.email && errors.email ? 'danger' : 'basic'}
                           caption={touched.email && errors.email ? errors.email : undefined}
@@ -202,8 +234,16 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                           value={values.confirmPassword}
                           onChangeText={handleChange('confirmPassword')}
                           onBlur={handleBlur('confirmPassword')}
-                          status={touched.confirmPassword && errors.confirmPassword ? 'danger' : 'basic'}
-                          caption={touched.confirmPassword && errors.confirmPassword ? errors.confirmPassword : undefined}
+                          status={
+                            touched.confirmPassword && errors.confirmPassword
+                              ? 'danger'
+                              : 'basic'
+                          }
+                          caption={
+                            touched.confirmPassword && errors.confirmPassword
+                              ? errors.confirmPassword
+                              : undefined
+                          }
                           style={styles.field}
                         />
                       </>
@@ -272,28 +312,35 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                               ))}
                             </select>
                             {touched.uf && errors.uf && (
-                              <Text status="danger" category="c2">{errors.uf}</Text>
+                              <Text status="danger" category="c2">
+                                {errors.uf}
+                              </Text>
                             )}
                           </View>
                         ) : (
                           <Select
                             placeholder="Selecione UF"
                             selectedIndex={ufIndex}
-                            value={ufIndex.row === 0 ? '' : statesBR[ufIndex.row - 1]}
-                            onSelect={index => {
-                              const idx = index as IndexPath;
+                            value={
+                              ufIndex.row === 0
+                                ? ''
+                                : statesBR[ufIndex.row - 1]
+                            }
+                            onSelect={idxRaw => {
+                              const idx = Array.isArray(idxRaw) ? idxRaw[0] : idxRaw;
                               setUfIndex(idx);
-                              setFieldValue('uf', idx.row === 0 ? '' : statesBR[idx.row - 1]);
+                              const uf = idx.row === 0
+                                ? ''
+                                : statesBR[idx.row - 1];
+                              setFieldValue('uf', uf);
                               handleBlur('uf');
                             }}
                             style={styles.field}
-                            data={[
-                              {
-                                title: 'Selecione UF'
-                              },
-                              ...statesBR.map(s => ({ title: s }))
-                            ]}
                           >
+                            <SelectItem title="Selecione UF" />
+                            {statesBR.map(s => (
+                              <SelectItem key={s} title={s} />
+                            ))}
                           </Select>
                         )}
 
@@ -321,13 +368,17 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                     {/* STEP 4 */}
                     {step === 4 && (
                       <>
-                        <Text category="s1" style={styles.label}>Tipo de usuário</Text>
+                        <Text category="s1" style={styles.label}>
+                          Tipo de usuário
+                        </Text>
                         <RadioGroup
                           selectedIndex={values.role === 'professional' ? 1 : 0}
-                          onChange={idx => {
-                            const role = idx === 0 ? 'patient' : 'professional';
-                            setFieldValue('role', role);
-                          }}
+                          onChange={idx =>
+                            setFieldValue(
+                              'role',
+                              idx === 0 ? 'patient' : 'professional'
+                            )
+                          }
                           style={styles.field}
                         >
                           <Radio>Paciente</Radio>
@@ -339,10 +390,24 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                             <Input
                               placeholder="Credencial / Descrição"
                               value={values.profissional_identification}
-                              onChangeText={handleChange('profissional_identification')}
-                              onBlur={handleBlur('profissional_identification')}
-                              status={touched.profissional_identification && errors.profissional_identification ? 'danger' : 'basic'}
-                              caption={touched.profissional_identification && errors.profissional_identification ? errors.profissional_identification : undefined}
+                              onChangeText={handleChange(
+                                'profissional_identification'
+                              )}
+                              onBlur={handleBlur(
+                                'profissional_identification'
+                              )}
+                              status={
+                                touched.profissional_identification &&
+                                  errors.profissional_identification
+                                  ? 'danger'
+                                  : 'basic'
+                              }
+                              caption={
+                                touched.profissional_identification &&
+                                  errors.profissional_identification
+                                  ? errors.profissional_identification
+                                  : undefined
+                              }
                               style={styles.field}
                             />
 
@@ -356,31 +421,53 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                                   }}
                                   style={styles.webSelect}
                                 >
-                                  <option value="" disabled>Selecione categoria</option>
+                                  <option value="" disabled>
+                                    Selecione categoria
+                                  </option>
                                   {categories.map(c => (
-                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                    <option
+                                      key={c.value}
+                                      value={c.value}
+                                    >
+                                      {c.label}
+                                    </option>
                                   ))}
                                 </select>
                                 {touched.category && errors.category && (
-                                  <Text status="danger" category="c2">{errors.category}</Text>
+                                  <Text status="danger" category="c2">
+                                    {errors.category}
+                                  </Text>
                                 )}
                               </View>
                             ) : (
                               <Select
                                 placeholder="Selecione categoria"
                                 selectedIndex={catIndex}
-                                value={catIndex.row === 0 ? '' : categories[catIndex.row - 1].label}
-                                onSelect={index => {
-                                  const idx = index as IndexPath;
+                                value={
+                                  catIndex.row === 0
+                                    ? ''
+                                    : categories[catIndex.row - 1].label
+                                }
+                                onSelect={idxRaw => {
+                                  const idx = Array.isArray(idxRaw)
+                                    ? idxRaw[0]
+                                    : idxRaw;
                                   setCatIndex(idx);
-                                  setFieldValue('category', idx.row === 0 ? '' : categories[idx.row - 1].value);
+                                  const cat =
+                                    idx.row === 0
+                                      ? ''
+                                      : categories[idx.row - 1].value;
+                                  setFieldValue('category', cat);
                                   handleBlur('category');
                                 }}
                                 style={styles.field}
                               >
                                 <SelectItem title="Selecione categoria" />
                                 {categories.map(c => (
-                                  <SelectItem key={c.value} title={c.label} />
+                                  <SelectItem
+                                    key={c.value}
+                                    title={c.label}
+                                  />
                                 ))}
                               </Select>
                             )}
@@ -393,7 +480,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                       {step > 1 && (
                         <Button
                           appearance="outline"
-                          onPress={prevStep}
+                          onPress={() => setStep(s => Math.max(s - 1, 1) as 1 | 2 | 3 | 4)}
                           disabled={isSubmitting || loading}
                           style={styles.button}
                         >
@@ -402,7 +489,26 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                       )}
                       {step < 4 ? (
                         <Button
-                          onPress={nextStep}
+                          onPress={async () => {
+                            try {
+                              await Promise.all(
+                                fieldsByStep[step].map(f =>
+                                  schema.validateAt(f as string, values)
+                                )
+                              );
+                              setStep(s => (s + 1) as 1 | 2 | 3 | 4);
+                            } catch (err: any) {
+                              const fe: Record<string, string> = {};
+                              if (Array.isArray(err)) {
+                                err.forEach((e: Yup.ValidationError) => {
+                                  if (e.path) fe[e.path] = e.message;
+                                });
+                              } else if (err instanceof Yup.ValidationError) {
+                                if (err.path) fe[err.path] = err.message;
+                              }
+                              setErrors(fe);
+                            }
+                          }}
                           disabled={isSubmitting || loading}
                           style={styles.button}
                         >
@@ -411,7 +517,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                       ) : (
                         <Button
                           onPress={() => handleSubmit()}
-                          disabled={isSubmitting || loading}
+                          disabled={isSubmitting}
                           style={styles.button}
                         >
                           Cadastrar
@@ -422,6 +528,14 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 );
               }}
             </Formik>
+
+            {snackbarVisible && (
+              <Animated.View
+                style={[styles.snackbar, { opacity: snackbarOpacity }]}
+              >
+                <Text style={styles.snackbarText}>{snackbarMessage}</Text>
+              </Animated.View>
+            )}
           </Card>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -432,13 +546,22 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 24 },
+  scroll: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 24,
+  },
   card: { padding: 24, borderRadius: 8 },
   title: { marginBottom: 16 },
   form: { flex: 1 },
   field: { marginBottom: 16 },
   label: { marginVertical: 8 },
-  buttonsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },
+  buttonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+  },
   button: { flex: 1, marginHorizontal: 4 },
   webSelect: {
     width: '100%',
@@ -446,11 +569,23 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#c4c4c4',
     borderRadius: 4,
-    backgroundColor: 'white'
+    backgroundColor: 'white',
   },
-  logoContainer: {
+  snackbar: {
+    position: 'absolute',
+    bottom: -100,
+    left: 16,
+    right: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#ff0000',
+    opacity: 5,
+    borderRadius: 4,
     alignItems: 'center',
-    marginVertical: 16,
+    justifyContent: 'center',
+  },
+  snackbarText: {
+    color: 'white',
   },
 });
 
