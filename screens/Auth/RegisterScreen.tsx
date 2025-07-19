@@ -1,31 +1,35 @@
 import React, { useState, useMemo } from 'react';
 import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useWindowDimensions,
+  StyleSheet,
+  Dimensions,
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import { useAuth } from '../../hooks/useAuth';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { maskCPF, maskCEP, maskPhone, validateCPF } from '@/utils/forms';
-import { Snackbar } from '../../components/Snackbar';
 import {
-  Button,
-  Input,
-  Text,
-  XStack,
-  YStack,
-  Select,
-  Label,
-  Spinner,
-} from 'tamagui';
+  maskCPF,
+  maskCEP,
+  maskPhone,
+  validateCPF,
+  fetchAddressByCep,
+} from '@/utils/forms';
+import { Snackbar } from '../../components/Snackbar';
+import { AppSelect, Option } from '../../components/ui/AppSelect';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+const TOTAL_STEPS = 4;
 
-const categories = [
+const categories: Option[] = [
   { label: 'Médico', value: 'doctor' },
   { label: 'Nutricionista', value: 'nutritionist' },
   { label: 'Psicólogo', value: 'psychologist' },
@@ -33,19 +37,24 @@ const categories = [
   { label: 'Personal Trainer', value: 'personal_trainer' },
 ];
 
-const statesBR = [
+const statesBR: Option[] = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
-];
+].map(s => ({ label: s, value: s }));
 
-export const RegisterScreen: React.FC<Props> = () => {
+export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const { signUp, loading } = useAuth();
-  const { width } = useWindowDimensions();
+  const { width } = Dimensions.get('window');
   const CARD_WIDTH = Math.min(width * 0.9, 400);
 
   const [step, setStep] = useState(1);
-  const [snack, setSnack] = useState({ visible: false, message: '', type: 'success' });
+  const [addressLoading, setAddressLoading] = useState(false);
+  const [snack, setSnack] = useState({
+    visible: false,
+    message: '',
+    type: 'success' as 'success' | 'error' | 'warning',
+  });
 
   const schema = Yup.object().shape({
     name: Yup.string().required('Nome obrigatório'),
@@ -73,37 +82,50 @@ export const RegisterScreen: React.FC<Props> = () => {
     }),
   });
 
-  const showSnackbar = (message: string, type = 'success') =>
+  const showSnackbar = (message: string, type: 'success' | 'error' | 'warning' = 'success') =>
     setSnack({ visible: true, message, type });
 
   const ufOptions = useMemo(() => statesBR, []);
   const catOptions = useMemo(() => categories, []);
 
   return (
-    <YStack flex={1} bg="$background">
+    <View style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.select({ ios: 'padding', android: undefined })}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-          <YStack
-            width={CARD_WIDTH}
-            padding="$5"
-            borderRadius="$4"
-            bg="$background"
-            elevation={4}
-            space="$3"
-          >
-            <Text fontSize="$7" fontWeight="700" textAlign="center">Crie sua conta</Text>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {/* Barra de progresso */}
+          <View style={[styles.progressBarContainer, { width: CARD_WIDTH }]}>
+            <View
+              style={[
+                styles.progressBarFill,
+                { width: `${(step / TOTAL_STEPS) * 100}%` },
+              ]}
+            />
+          </View>
+
+          <View style={[styles.card, { width: CARD_WIDTH }]}>
+            <Text style={styles.title}>Crie sua conta</Text>
 
             <Formik
               initialValues={{
-                name: '', cpf: '', cep: '', uf: '', city: '',
-                address: '', email: '', password: '', confirmPassword: '',
-                phone: '', role: 'patient', profissional_identification: '', category: '',
+                name: '',
+                cpf: '',
+                cep: '',
+                uf: '',
+                city: '',
+                address: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+                phone: '',
+                role: 'patient',
+                profissional_identification: '',
+                category: '',
               }}
               validationSchema={schema}
-              onSubmit={async (values) => {
+              onSubmit={async values => {
                 try {
                   await signUp({
                     ...values,
@@ -113,14 +135,23 @@ export const RegisterScreen: React.FC<Props> = () => {
                   });
                   showSnackbar('Cadastro realizado com sucesso!', 'success');
                 } catch (error: any) {
-                  showSnackbar(error.message || 'Erro ao cadastrar', 'error');
+                  const backendMsg =
+                    error.response?.data?.error ??
+                    error.response?.data?.message ??
+                    error.message ??
+                    'Erro ao cadastrar';
+                  showSnackbar(backendMsg, 'error');
                 }
               }}
             >
               {({
-                values, errors, handleChange, setFieldValue, handleSubmit, validateForm, isSubmitting,
+                values,
+                handleChange,
+                setFieldValue,
+                handleSubmit,
+                validateForm,
+                isSubmitting,
               }) => {
-
                 const steps = [
                   ['email', 'password', 'confirmPassword'],
                   ['name', 'cpf', 'phone'],
@@ -129,18 +160,16 @@ export const RegisterScreen: React.FC<Props> = () => {
                 ];
 
                 const validateStep = async () => {
-                  const currentFields = steps[step - 1];
+                  const current = steps[step - 1];
                   const allErrors = await validateForm();
-                  const stepErrors = currentFields.reduce((acc, key) => {
-                    if (allErrors[key]) acc[key] = allErrors[key];
+                  const stepErr = current.reduce((acc, key) => {
+                    if ((allErrors as any)[key]) acc[key] = (allErrors as any)[key];
                     return acc;
-                  }, {} as any);
-
-                  if (Object.keys(stepErrors).length) {
-                    showSnackbar(Object.values(stepErrors)[0] as string, 'error');
+                  }, {} as Record<string, string>);
+                  if (Object.keys(stepErr).length) {
+                    showSnackbar(Object.values(stepErr)[0], 'error');
                     return false;
                   }
-
                   return true;
                 };
 
@@ -148,73 +177,264 @@ export const RegisterScreen: React.FC<Props> = () => {
                   if (await validateStep()) setStep(step + 1);
                 };
 
+                const goBack = () => setStep(step - 1);
+
+                // handler para CEP + busca de endereço
+                const handleCepChange = async (text: string) => {
+                  const cleaned = text.replace(/\D/g, '').slice(0, 8);
+                  setFieldValue('cep', maskCEP(text));
+                  if (cleaned.length === 8) {
+                    setAddressLoading(true);
+                    try {
+                      const { uf, city, address } = await fetchAddressByCep(cleaned);
+                      setFieldValue('uf', uf);
+                      setFieldValue('city', city);
+                      setFieldValue('address', address);
+                    } catch (err: any) {
+                      showSnackbar(err.message, 'warning');
+                    } finally {
+                      setAddressLoading(false);
+                    }
+                  }
+                };
+
                 return (
-                  <>
+                  <View>
                     {step === 1 && (
                       <>
-                        <Input placeholder="Email" value={values.email} onChangeText={handleChange('email')} />
-                        <Input placeholder="Senha" secureTextEntry value={values.password} onChangeText={handleChange('password')} />
-                        <Input placeholder="Confirme a senha" secureTextEntry value={values.confirmPassword} onChangeText={handleChange('confirmPassword')} />
+                        <TextInput
+                          placeholder="Email"
+                          style={styles.input}
+                          value={values.email}
+                          onChangeText={handleChange('email')}
+                          keyboardType="email-address"
+                          autoCapitalize="none"
+                        />
+                        <TextInput
+                          placeholder="Senha"
+                          style={styles.input}
+                          secureTextEntry
+                          value={values.password}
+                          onChangeText={handleChange('password')}
+                        />
+                        <TextInput
+                          placeholder="Confirme a senha"
+                          style={styles.input}
+                          secureTextEntry
+                          value={values.confirmPassword}
+                          onChangeText={handleChange('confirmPassword')}
+                        />
                       </>
                     )}
 
                     {step === 2 && (
                       <>
-                        <Input placeholder="Nome completo" value={values.name} onChangeText={handleChange('name')} />
-                        <Input placeholder="CPF" value={values.cpf} onChangeText={t => setFieldValue('cpf', maskCPF(t))} />
-                        <Input placeholder="Telefone" value={values.phone} onChangeText={t => setFieldValue('phone', maskPhone(t))} />
+                        <TextInput
+                          placeholder="Nome completo"
+                          style={styles.input}
+                          value={values.name}
+                          onChangeText={handleChange('name')}
+                        />
+                        <TextInput
+                          placeholder="CPF"
+                          style={styles.input}
+                          value={values.cpf}
+                          onChangeText={t => setFieldValue('cpf', maskCPF(t))}
+                          keyboardType="numeric"
+                        />
+                        <TextInput
+                          placeholder="Telefone"
+                          style={styles.input}
+                          value={values.phone}
+                          onChangeText={t => setFieldValue('phone', maskPhone(t))}
+                          keyboardType="phone-pad"
+                        />
                       </>
                     )}
 
                     {step === 3 && (
                       <>
-                        <Input placeholder="CEP" value={values.cep} onChangeText={t => setFieldValue('cep', maskCEP(t))} />
-                        <Select value={values.uf} onValueChange={val => setFieldValue('uf', val)}>
-                          <Select.Trigger><Select.Value placeholder="Selecione UF" /></Select.Trigger>
-                          <Select.Content>
-                            {ufOptions.map(u => (<Select.Item key={u} value={u}><Select.ItemText>{u}</Select.ItemText></Select.Item>))}
-                          </Select.Content>
-                        </Select>
-                        <Input placeholder="Cidade" value={values.city} onChangeText={handleChange('city')} />
-                        <Input placeholder="Endereço" value={values.address} onChangeText={handleChange('address')} />
+                        <TextInput
+                          placeholder="CEP"
+                          style={styles.input}
+                          value={values.cep}
+                          onChangeText={handleCepChange}
+                          keyboardType="numeric"
+                        />
+                        {addressLoading && (
+                          <ActivityIndicator style={{ marginBottom: 12 }} />
+                        )}
+                        <AppSelect
+                          options={ufOptions}
+                          selectedValue={values.uf}
+                          onValueChange={val => setFieldValue('uf', val)}
+                          placeholder="Selecione UF"
+                        />
+                        <TextInput
+                          placeholder="Cidade"
+                          style={styles.input}
+                          value={values.city}
+                          onChangeText={handleChange('city')}
+                        />
+                        <TextInput
+                          placeholder="Endereço"
+                          style={styles.input}
+                          value={values.address}
+                          onChangeText={handleChange('address')}
+                        />
                       </>
                     )}
 
                     {step === 4 && (
                       <>
-                        <XStack space="$3">
-                          {['patient', 'professional'].map(r => (
-                            <Button key={r} flex={1} theme={values.role === r ? 'active' : 'gray'} onPress={() => setFieldValue('role', r)}>
-                              {r === 'patient' ? 'Paciente' : 'Profissional'}
-                            </Button>
-                          ))}
-                        </XStack>
+                        <View style={styles.toggleContainer}>
+                          <TouchableOpacity
+                            style={[
+                              styles.toggleButton,
+                              values.role === 'patient' && styles.toggleButtonActive,
+                            ]}
+                            onPress={() => setFieldValue('role', 'patient')}
+                          >
+                            <Text style={styles.toggleText}>Paciente</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[
+                              styles.toggleButton,
+                              styles.toggleButtonMargin,
+                              values.role === 'professional' && styles.toggleButtonActive,
+                            ]}
+                            onPress={() => setFieldValue('role', 'professional')}
+                          >
+                            <Text style={styles.toggleText}>Profissional</Text>
+                          </TouchableOpacity>
+                        </View>
                         {values.role === 'professional' && (
                           <>
-                            <Input placeholder="Credencial" value={values.profissional_identification} onChangeText={handleChange('profissional_identification')} />
-                            <Select value={values.category} onValueChange={val => setFieldValue('category', val)}>
-                              <Select.Trigger><Select.Value placeholder="Categoria" /></Select.Trigger>
-                              <Select.Content>
-                                {catOptions.map(cat => (<Select.Item key={cat.value} value={cat.value}><Select.ItemText>{cat.label}</Select.ItemText></Select.Item>))}
-                              </Select.Content>
-                            </Select>
+                            <TextInput
+                              placeholder="Credencial"
+                              style={styles.input}
+                              value={values.profissional_identification}
+                              onChangeText={handleChange('profissional_identification')}
+                            />
+                            <AppSelect
+                              options={catOptions}
+                              selectedValue={values.category}
+                              onValueChange={val => setFieldValue('category', val)}
+                              placeholder="Categoria"
+                            />
                           </>
                         )}
                       </>
                     )}
 
-                    <Button mt="$3" onPress={step < 4 ? nextStep : handleSubmit} disabled={isSubmitting || loading}>
-                      {isSubmitting ? <Spinner /> : step < 4 ? 'Próximo' : 'Cadastrar'}
-                    </Button>
-                  </>
+                    <View style={styles.buttonRow}>
+                      {step > 1 && (
+                        <TouchableOpacity
+                          style={styles.buttonSecondary}
+                          onPress={goBack}
+                          disabled={isSubmitting || loading}
+                        >
+                          <Text style={styles.buttonSecondaryText}>Voltar</Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        style={[
+                          styles.button,
+                          (isSubmitting || loading) && styles.buttonDisabled,
+                          step > 1 && { marginLeft: 8 },
+                        ]}
+                        onPress={step < TOTAL_STEPS ? nextStep : handleSubmit as any}
+                        disabled={isSubmitting || loading}
+                      >
+                        {isSubmitting || loading ? (
+                          <ActivityIndicator color="#fff" />
+                        ) : (
+                          <Text style={styles.buttonText}>
+                            {step < TOTAL_STEPS ? 'Próximo' : 'Cadastrar'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 );
               }}
             </Formik>
-          </YStack>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.link}>Já tem conta? Faça login</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Snackbar
+            visible={snack.visible}
+            message={snack.message}
+            type={snack.type}
+            onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
+          />
         </ScrollView>
-        <Snackbar {...snack} onDismiss={() => setSnack({ ...snack, visible: false })} />
       </KeyboardAvoidingView>
-    </YStack>
+    </View>
   );
 };
 
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#eee',
+    borderRadius: 3,
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+  progressBarFill: { height: '100%', backgroundColor: '#007AFF' },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  title: {
+    fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 20
+  },
+  input: {
+    borderWidth: 1, borderColor: '#ccc', borderRadius: 4,
+    padding: 10, marginBottom: 12, fontSize: 16,
+  },
+  toggleContainer: { flexDirection: 'row', marginBottom: 12 },
+  toggleButton: {
+    flex: 1, padding: 12, borderRadius: 4,
+    backgroundColor: '#ccc', alignItems: 'center',
+  },
+  toggleButtonActive: { backgroundColor: '#007AFF' },
+  toggleButtonMargin: { marginLeft: 8 },
+  toggleText: { color: '#fff', fontSize: 16 },
+  buttonRow: {
+    flexDirection: 'row', marginTop: 12, justifyContent: 'flex-end'
+  },
+  buttonSecondary: {
+    flex: 1, padding: 12, borderRadius: 4,
+    borderWidth: 1, borderColor: '#007AFF', alignItems: 'center',
+  },
+  buttonSecondaryText: { color: '#007AFF', fontSize: 16 },
+  button: {
+    flex: 1, backgroundColor: '#007AFF', padding: 12,
+    borderRadius: 4, alignItems: 'center',
+  },
+  buttonDisabled: { backgroundColor: '#A0A0A0' },
+  buttonText: { color: '#fff', fontSize: 16 },
+  link: {
+    color: '#007AFF', textAlign: 'center', marginTop: 15
+  },
+});
+
+export default RegisterScreen;

@@ -1,23 +1,18 @@
-import React from 'react'
-import {
-  Select,
-  Adapt,
-  Sheet,
-  YStack,
-  Label
-} from 'tamagui'
+import React from 'react';
+import { Platform, View, StyleSheet } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
-interface Option {
-  label: string
-  value: string
+export interface Option {
+  label: string;
+  value: string;
 }
 
-interface AppSelectProps {
-  options: Option[]
-  selectedValue?: string
-  onValueChange: (value: string) => void
-  placeholder?: string
-  label?: string
+export interface AppSelectProps {
+  options: Option[];
+  selectedValue?: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  style?: any;
 }
 
 export const AppSelect: React.FC<AppSelectProps> = ({
@@ -25,46 +20,58 @@ export const AppSelect: React.FC<AppSelectProps> = ({
   selectedValue = '',
   onValueChange,
   placeholder = 'Selecione...',
-  label,
+  style,
 }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.webContainer, style]}>
+        <select
+          value={selectedValue}
+          onChange={e => onValueChange(e.target.value)}
+          style={styles.webSelect}
+        >
+          <option value="">{placeholder}</option>
+          {options.map(o => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </View>
+    );
+  }
+
   return (
-    <YStack space="$2">
-      {label && <Label>{label}</Label>}
-
-      <Select
-        id="app-select"
-        value={selectedValue}
-        onValueChange={onValueChange}
+    <View style={[styles.pickerContainer, style]}>
+      <Picker
+        selectedValue={selectedValue}
+        onValueChange={val => onValueChange(val)}
       >
-        <Select.Trigger>
-          <Select.Value placeholder={placeholder} />
-        </Select.Trigger>
+        <Picker.Item label={placeholder} value="" />
+        {options.map(o => (
+          <Picker.Item key={o.value} label={o.label} value={o.value} />
+        ))}
+      </Picker>
+    </View>
+  );
+};
 
-        <Adapt when="sm">
-          <Sheet modal dismissOnSnapToBottom snapPoints={[60]}>
-            <Sheet.Frame>
-              <Adapt.Contents />
-            </Sheet.Frame>
-          </Sheet>
-        </Adapt>
-
-        <Select.Content>
-          <Select.ScrollUpButton />
-          <Select.Viewport>
-            <Select.Item index={0} value="">
-              <Select.ItemText>{placeholder}</Select.ItemText>
-            </Select.Item>
-
-            {options.map((opt, index) => (
-              <Select.Item index={index + 1} key={opt.value} value={opt.value}>
-                <Select.ItemText>{opt.label}</Select.ItemText>
-              </Select.Item>
-            ))}
-          </Select.Viewport>
-          <Select.ScrollDownButton />
-        </Select.Content>
-      </Select>
-    </YStack>
-  )
-}
+const styles = StyleSheet.create({
+  webContainer: { marginBottom: 16 },
+  webSelect: {
+    width: '100%',
+    padding: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#c4c4c4',
+    borderRadius: 4,
+    backgroundColor: 'white',
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#c4c4c4',
+    borderRadius: 4,
+    marginBottom: 12,
+    overflow: 'hidden',
+  },
+});
 

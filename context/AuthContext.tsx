@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 2. Carrega token + user uma única vez
+  // 1. Carrega token + user uma única vez
   useEffect(() => {
     (async () => {
       try {
@@ -62,7 +62,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     })();
   }, []);
 
-  // 3. Sincroniza header Authorization do axios
+  // 2. Sincroniza header Authorization do axios
   useEffect(() => {
     if (token) {
       api.defaults.headers.common.Authorization = `Bearer ${token}`;
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [token]);
 
-  // 4. Funções estáveis com useCallback
+  // 3. login
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
@@ -88,11 +88,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // 4. registro + login automático
   const signUp = useCallback(async (data: RegisterData) => {
     setLoading(true);
     setError(null);
     try {
-      const { token: jwt, user: userData } = await registerAPI(data);
+      // primeiro: registra
+      await registerAPI(data);
+
+      // depois: faz login automático
+      const { token: jwt, user: userData } = await loginAPI({
+        email: data.email,
+        password: data.password
+      });
       await AsyncStorage.setItem('@vittaaqui:token', jwt);
       setToken(jwt);
       setUser(userData);
@@ -104,6 +112,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // 5. logout
   const signOut = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -118,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // 1. (cont.) Memoiza todo o objeto de contexto
+  // 6. memoiza contexto
   const contextValue = useMemo(() => ({
     user,
     token,
@@ -136,4 +145,3 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </AuthContext.Provider>
   );
 };
-

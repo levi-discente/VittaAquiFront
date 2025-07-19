@@ -1,3 +1,5 @@
+import axios from "axios";
+
 export const maskCPF = (value: string) => {
   const digits = value.replace(/\D/g, '').slice(0, 11);
   let masked = digits;
@@ -59,3 +61,51 @@ export const validateCPF = (cpf: string) => {
   return true;
 };
 
+
+export interface AddressInfo {
+  uf: string;
+  city: string;
+  address: string;
+}
+
+/**
+ * Busca no ViaCEP o estado (UF), a cidade e o logradouro/bairro de um CEP.
+ * @param cep — pode vir formatado (com ponto/travessão); será limpo automaticamente.
+ * @returns { uf, city, address }
+ * @throws Error se CEP inválido, não encontrado ou erro de rede.
+ */
+export async function fetchAddressByCep(cep: string): Promise<AddressInfo> {
+  const cleaned = cep.replace(/\D/g, '');
+  if (cleaned.length !== 8) {
+    throw new Error('CEP inválido. Deve conter 8 dígitos.');
+  }
+
+  const res = await axios(`https://viacep.com.br/ws/${cleaned}/json/`);
+  if (!res.status || res.status >= 400) {
+    throw new Error(`Erro ao buscar CEP (status ${res.status})`);
+  }
+
+  const data: {
+    uf?: string;
+    localidade?: string;
+    logradouro?: string;
+    bairro?: string;
+    complemento?: string;
+    erro?: boolean;
+  } = await res.data;
+
+  if (data.erro) {
+    throw new Error('CEP não encontrado.');
+  }
+
+  const parts = [];
+  if (data.logradouro) parts.push(data.logradouro);
+  if (data.bairro) parts.push(data.bairro);
+  if (data.complemento) parts.push(data.complemento);
+
+  return {
+    uf: data.uf || '',
+    city: data.localidade || '',
+    address: parts.join(' - '),
+  }
+}
