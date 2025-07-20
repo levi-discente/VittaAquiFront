@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import AuthNavigator from './AuthNavigator';
 import AppNavigator from './AppNavigator';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { PermissionProvider } from '@/context/PermissionContext';
 
 const Navigation: React.FC = () => {
   const { user, initializing } = useAuth();
@@ -16,9 +17,16 @@ const Navigation: React.FC = () => {
     );
   }
 
+
   return (
     <NavigationContainer>
-      {user ? <AppNavigator /> : <AuthNavigator />}
+      {user ? (
+        <PermissionProvider>
+          <AppNavigator />
+        </PermissionProvider>
+      ) : (
+        <AuthNavigator />
+      )}
     </NavigationContainer>
   );
 };

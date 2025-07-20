@@ -1,7 +1,7 @@
 export interface ProfessionalProfile {
   id: string;
   userId: string;
-  name: string;
+  userName: string;
   category: string;
   bio: string;
   services?: string[];
@@ -13,7 +13,7 @@ export interface ProfessionalProfile {
 
 export interface ProfessionalFilter {
   category?: string;
-  name?: string;
+  userName?: string;
   tags?: string[];
   online?: boolean;
   presencial?: boolean;

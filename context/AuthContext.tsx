@@ -1,3 +1,5 @@
+
+// context/AuthContext.tsx
 import React, {
   createContext,
   useState,
@@ -9,9 +11,8 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/user';
 import { login as loginAPI, register as registerAPI } from '../api/auth';
-import { getMe } from '../api/user';
+import api from '../api/api';
 import { RegisterData } from '@/types/auth';
-import api from '@/api/api';
 
 interface AuthContextProps {
   user: User | null;
@@ -42,84 +43,76 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 1. Carrega token + user uma única vez
+  // 1) Ao montar, recarrega token e user do storage (SEM chamar getMe)
   useEffect(() => {
     (async () => {
       try {
-        const storagedToken = await AsyncStorage.getItem('@vittaaqui:token');
-        if (storagedToken) {
-          setToken(storagedToken);
-          const userData = await getMe();
-          setUser(userData);
+        const [t, u] = await Promise.all([
+          AsyncStorage.getItem('@vittaaqui:token'),
+          AsyncStorage.getItem('@vittaaqui:user'),
+        ]);
+        if (t) {
+          setToken(t);
+          api.defaults.headers.common.Authorization = `Bearer ${t}`;
         }
-      } catch {
-        await AsyncStorage.removeItem('@vittaaqui:token');
-        setToken(null);
-        setUser(null);
+        if (u) {
+          setUser(JSON.parse(u));
+        }
       } finally {
         setInitializing(false);
       }
     })();
   }, []);
 
-  // 2. Sincroniza header Authorization do axios
-  useEffect(() => {
-    if (token) {
-      api.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete api.defaults.headers.common.Authorization;
-    }
-  }, [token]);
-
-  // 3. login
+  // 2) signIn: ajusta header, grava token+user no storage e no estado
   const signIn = useCallback(async (email: string, password: string) => {
     setLoading(true);
     setError(null);
     try {
       const { token: jwt, user: userData } = await loginAPI({ email, password });
+      // 2.1 Header
+      api.defaults.headers.common.Authorization = `Bearer ${jwt}`;
+      // 2.2 Persistência
       await AsyncStorage.setItem('@vittaaqui:token', jwt);
+      await AsyncStorage.setItem('@vittaaqui:user', JSON.stringify(userData));
+      // 2.3 Estado
       setToken(jwt);
       setUser(userData);
     } catch (err: any) {
-      setError(err.message || 'Falha no login');
+      setError(err.response?.data?.message ?? err.message ?? 'Falha no login');
       throw err;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 4. registro + login automático
+  // 3) signUp: registra e em seguida chama signIn para simplificar
   const signUp = useCallback(async (data: RegisterData) => {
     setLoading(true);
     setError(null);
     try {
-      // primeiro: registra
       await registerAPI(data);
-
-      // depois: faz login automático
-      const { token: jwt, user: userData } = await loginAPI({
-        email: data.email,
-        password: data.password
-      });
-      await AsyncStorage.setItem('@vittaaqui:token', jwt);
-      setToken(jwt);
-      setUser(userData);
+      await signIn(data.email, data.password);
     } catch (err: any) {
-      setError(err.message || 'Falha no cadastro');
+      setError(err.response?.data?.message ?? err.message ?? 'Falha no cadastro');
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [signIn]);
 
-  // 5. logout
+  // 4) signOut: limpa storage, header e estado
   const signOut = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      await AsyncStorage.removeItem('@vittaaqui:token');
-      setUser(null);
+      await Promise.all([
+        AsyncStorage.removeItem('@vittaaqui:token'),
+        AsyncStorage.removeItem('@vittaaqui:user'),
+      ]);
+      delete api.defaults.headers.common.Authorization;
       setToken(null);
+      setUser(null);
     } catch (err: any) {
       setError('Não foi possível sair');
     } finally {
@@ -127,8 +120,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
-  // 6. memoiza contexto
-  const contextValue = useMemo(() => ({
+  const contextValue = useMemo((): AuthContextProps => ({
     user,
     token,
     initializing,
@@ -136,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     error,
     signIn,
     signUp,
-    signOut
+    signOut,
   }), [user, token, initializing, loading, error, signIn, signUp, signOut]);
 
   return (
@@ -145,3 +137,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </AuthContext.Provider>
   );
 };
+

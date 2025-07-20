@@ -2,30 +2,48 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
 import EditProfileScreen from '../screens/Profile/EditProfileScreen';
-import ProfessionalListScreen from '../screens/Professional/ProfessionalListScreen';
 import HomeScreen from '@/screens/Home';
+import { usePermissions } from '@/context/PermissionContext';
+import PatientHomeScreen from '@/screens/Home';
 
 export type AppStackParamList = {
-  Home: undefined;
+  PatientHome: undefined;
+  ProfessionalAgenda: undefined;
   Profile: undefined;
   EditProfile: undefined;
   ProfessionalList: undefined;
 };
 
+
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
-const AppNavigator = () => (
-  <Stack.Navigator>
-    <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Início' }} />
-    <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Meu Perfil' }} />
-    <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Editar Perfil' }} />
-    <Stack.Screen
-      name="ProfessionalList"
-      component={ProfessionalListScreen}
-      options={{ title: 'Profissionais' }}
-    />
-  </Stack.Navigator>
-);
+const AppNavigator: React.FC = () => {
+  const { canViewPatientHome, canViewProfessionalAgenda } = usePermissions();
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {canViewProfessionalAgenda && (
+        <Stack.Screen
+          name="ProfessionalAgenda"
+          component={EditProfileScreen}
+        />
+      )}
+
+      {canViewPatientHome && (
+        <Stack.Screen
+          name="PatientHome"
+          component={PatientHomeScreen}
+        />
+      )}
+
+      {/* Rotas comuns a ambos os perfis */}
+      <Stack.Screen
+        name="Profile"
+        component={ProfileScreen}
+      />
+    </Stack.Navigator>
+  );
+};
 
 export default AppNavigator;
 
