@@ -27,7 +27,6 @@ api.interceptors.response.use(
   response => response,
   async error => {
     if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('@vittaaqui:token');
     }
     return Promise.reject(error);
   }

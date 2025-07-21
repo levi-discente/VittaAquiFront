@@ -12,5 +12,6 @@ export const register = async (data: RegisterData): Promise<AuthResponse> => {
   const response = await api.post('/auth/register', data, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
+  console.log(response.data);
   return response.data;
 };

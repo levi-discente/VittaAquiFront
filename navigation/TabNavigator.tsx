@@ -17,6 +17,7 @@ const TabNavigator: React.FC = () => {
   const { canViewPatientHome, canViewProfessionalAgenda } = usePermissions();
 
   return (
+
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -31,13 +32,23 @@ const TabNavigator: React.FC = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      {canViewPatientHome && (
-        <Tab.Screen name="Home" component={PatientHomeScreen} />
-      )}
+      {/* Home fica sempre */}
+      <Tab.Screen
+        name="Home"
+        component={PatientHomeScreen}
+        options={{ title: 'Início' }}
+      />
+
+      {/* Agenda só para quem tem permissão */}
       {canViewProfessionalAgenda && (
-        <Tab.Screen name="Agenda" component={ProfessionalAgendaScreen} />
+        <Tab.Screen
+          name="Agenda"
+          component={ProfessionalAgendaScreen}
+          options={{ title: 'Agenda' }}
+        />
       )}
     </Tab.Navigator>
+
   );
 };
 
