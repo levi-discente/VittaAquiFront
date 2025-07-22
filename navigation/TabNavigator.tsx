@@ -2,11 +2,9 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import ProfessionalAgendaScreen from '@/screens/Professional/ProfessionalFormScreen'; // ou outro componente de agenda
 import { usePermissions } from '@/context/PermissionContext';
-import PatientHomeScreen from '@/screens/Patient/Home';
 import ProfileStack from './ProfileStack';
-import MyAppointmentsScreen from '@/screens/Common/MyAppointmentsScreen';
+import { MyAppointmentsScreen } from '@/screens/Common/MyAppointmentsScreen';
 
 export type TabParamList = {
   Home: undefined;

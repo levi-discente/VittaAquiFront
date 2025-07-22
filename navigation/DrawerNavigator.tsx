@@ -9,10 +9,12 @@ import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import ProfileScreen from '@/screens/Common/ProfileScreen';
 import TabNavigator from './TabNavigator';
+import { MyAppointmentsScreen } from '@/screens/Common/MyAppointmentsScreen';
 
 export type DrawerParamList = {
   Início: undefined;
   Perfil: undefined;
+  Agenda: undefined;
 };
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
@@ -53,7 +55,7 @@ const DrawerNavigator: React.FC = () => (
         component={TabNavigator}
         options={{
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+            <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
@@ -62,7 +64,16 @@ const DrawerNavigator: React.FC = () => (
         component={ProfileScreen}
         options={{
           drawerIcon: ({ color, size }) => (
-            <Ionicons name="person-circle-outline" size={size} color={color} />
+            <Ionicons name="person-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="Agenda"
+        component={MyAppointmentsScreen}
+        options={{
+          drawerIcon: ({ color, size }) => (
+            <Ionicons name="calendar" size={size} color={color} />
           ),
         }}
       />

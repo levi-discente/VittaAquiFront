@@ -1,51 +1,86 @@
-import React, { useEffect, useState, useMemo } from 'react'
-import { View, StyleSheet, FlatList, ActivityIndicator } from 'react-native'
-import { Text, Colors } from 'react-native-ui-lib'
-import { Calendar, DateData, MarkedDates } from 'react-native-calendars'
-import { useMyAppointments } from '@/hooks/useAppointments'
-import { Appointment } from '@/types/appointment'
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  SafeAreaView,
+  View,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
+import { Text, Colors } from 'react-native-ui-lib';
+import { Calendar, DateData, MarkedDates } from 'react-native-calendars';
+import { useMyAppointments } from '@/hooks/useAppointments';
+import { Appointment } from '@/types/appointment';
+import { AppointmentCard } from '@/components/AppointmentCard';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '@/navigation/ProfileStack';
 
-const MyAppointmentsScreen: React.FC = () => {
-  const { appointments, loading, error, refresh } = useMyAppointments()
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().slice(0, 10)
-  )
+const { width } = Dimensions.get('window');
+const CALENDAR_HEIGHT = 350;
+const CARD_WIDTH = width * 0.9;
 
-  // marcações no calendário: dia com compromisso ganha um ponto azul
-  const marked = useMemo<MarkedDates>(() => {
-    const m: MarkedDates = {}
-    appointments.forEach(ap => {
-      const day = ap.start_time.slice(0, 10) // "YYYY-MM-DD"
-      m[day] = { marked: true, dotColor: Colors.blue30 }
-    })
-    // marca o selecionado com fundo azul
-    if (m[selectedDate]) {
-      m[selectedDate] = { ...m[selectedDate], selected: true, selectedColor: Colors.blue30 }
-    } else {
-      m[selectedDate] = { selected: true, selectedColor: Colors.blue30 }
-    }
-    return m
-  }, [appointments, selectedDate])
+type Props = NativeStackScreenProps<ProfileStackParamList, 'MyAppointments'>;
 
-  // filtra compromissos do dia selecionado
+function pad(n: number) {
+  return String(n).padStart(2, '0');
+}
+
+function formatLocalDateString(dateString: string) {
+  const [y, m, d] = dateString.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.toLocaleDateString('pt-BR', {
+    weekday: 'long', day: '2-digit', month: 'long',
+  });
+}
+
+export const MyAppointmentsScreen: React.FC<Props> = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
+
+  const { appointments, loading, error, refresh } = useMyAppointments();
+  // garante lista não nula
+  const safeAppointments = appointments ?? [];
+
+  const today = new Date();
+  const initialDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+
+  const [selectedDate, setSelectedDate] = useState<string>(initialDate);
+
+  const markedDates = useMemo<MarkedDates>(() => {
+    const m: MarkedDates = {};
+    safeAppointments.forEach(ap => {
+      const day = ap.start_time.slice(0, 10);
+      if (!m[day]) {
+        m[day] = { dots: [], marked: true };
+      }
+      m[day].dots.push({ key: ap.id, color: Colors.blue30 });
+    });
+    m[selectedDate] = {
+      ...(m[selectedDate] || {}),
+      selected: true,
+      selectedColor: Colors.blue30,
+    };
+    return m;
+  }, [safeAppointments, selectedDate]);
+
   const todays = useMemo<Appointment[]>(() => {
-    return appointments.filter(ap => ap.start_time.slice(0, 10) === selectedDate)
-  }, [appointments, selectedDate])
+    return safeAppointments.filter(
+      ap => ap.start_time.slice(0, 10) === selectedDate
+    );
+  }, [safeAppointments, selectedDate]);
 
   useEffect(() => {
-    // título da tela
-    // @ts-ignore
-    MyAppointmentsScreen.navigationOptions = { title: 'Meus Agendamentos' }
-  }, [])
+    // @ts-ignore legacy header setup
+    MyAppointmentsScreen.navigationOptions = { title: 'Meus Agendamentos' };
+  }, []);
 
   if (loading) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={Colors.blue30} />
       </View>
-    )
+    );
   }
-
   if (error) {
     return (
       <View style={styles.centered}>
@@ -54,108 +89,99 @@ const MyAppointmentsScreen: React.FC = () => {
           Tentar novamente
         </Text>
       </View>
-    )
+    );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
+      <Text style={styles.screenTitle}>Meus Agendamentos</Text>
+
       <Calendar
-        onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
-        markedDates={marked}
+        style={styles.calendar}
+        markingType="multi-dot"
+        markedDates={markedDates}
+        onDayPress={(day: DateData) => {
+          setSelectedDate(day.dateString);
+        }}
         theme={{
           todayTextColor: Colors.blue30,
           arrowColor: Colors.blue30,
+          dotColor: Colors.blue30,
+          selectedDayBackgroundColor: Colors.blue30,
         }}
       />
 
-      <View style={styles.listHeader}>
-        <Text text70>
-          {new Date(selectedDate).toLocaleDateString('pt-BR', {
-            weekday: 'long',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-          })}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionHeaderText}>
+          {formatLocalDateString(selectedDate)}
         </Text>
       </View>
 
       {todays.length === 0 ? (
-        <View style={styles.noAppt}>
-          <Text text90 grey40>Nenhum compromisso neste dia</Text>
+        <View style={styles.centered}>
+          <Text text90 grey40>Sem agendamentos para essa data.</Text>
         </View>
       ) : (
         <FlatList
           data={todays}
-          keyExtractor={item => String(item.id)}
+          keyExtractor={item => item.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <View style={styles.card}>
-              <View style={styles.time}>
-                <Text text80>{new Date(item.start_time).toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}</Text>
-                <Text text80 grey40>–</Text>
-                <Text text80>{new Date(item.end_time).toLocaleTimeString('pt-BR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}</Text>
-              </View>
-              <View style={styles.info}>
-                <Text text90M>{item.professionalName}</Text>
-                <Text text90 grey40>{item.status}</Text>
-              </View>
-            </View>
+            <AppointmentCard
+              appointment={item}
+              onPress={() =>
+                navigation.navigate('ProfessionalDetail', {
+                  profileId: String(item.professional_id),
+                })
+              }
+              onEdit={() => {
+                /* TODO: abrir modal de edição de data */
+              }}
+              onCancel={() => {
+                /* TODO: chamar API de cancelar */
+              }}
+            />
           )}
         />
       )}
-    </View>
-  )
-}
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+  },
+  screenTitle: {
+    fontSize: 24,
+    fontWeight: '600',
+    margin: 16,
+  },
+  calendar: {
+    width: '100%',
+    height: CALENDAR_HEIGHT,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFF',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: Colors.grey70,
+  },
+  sectionHeaderText: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#333',
+  },
+  list: {
+    padding: 16,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
   },
-  listHeader: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-  },
-  noAppt: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 32,
-  },
-  list: {
-    padding: 16,
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    elevation: 2,
-  },
-  time: {
-    width: 80,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  info: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingLeft: 12,
-  },
-})
+});
 
-export default MyAppointmentsScreen

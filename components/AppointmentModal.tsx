@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -13,11 +13,8 @@ export type AppointmentModalProps = {
   visible: boolean;
   onCancel: () => void;
   onConfirm: (startISO: string, endISO: string) => void;
-  /** Dias da semana em que o profissional atende */
   workingDays: string[];
-  /** Horário de início e fim no formato 'HH:mm' */
   workingHours: { start: string; end: string };
-  /** Agendamentos já existentes para esse profissional (ISO strings) */
   existingAppointments?: { start: string; end: string }[];
   slotInterval?: number;
   daysAhead?: number;
@@ -31,6 +28,8 @@ const daysMap = [
 const { width } = Dimensions.get('window');
 const MODAL_WIDTH = Math.min(width * 0.9, 400);
 
+type Slot = { time: Date; available: boolean };
+
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   visible, onCancel, onConfirm,
   workingDays, workingHours,
@@ -42,7 +41,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
 
-  // prepare next days
+  // next N days
   const days = useMemo(() => {
     const arr: Date[] = [];
     const today = new Date();
@@ -52,9 +51,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       arr.push(d);
     }
     return arr;
-  }, [daysAhead, visible]);
+  }, [daysAhead]);
 
-  // parse existing appointments once
   const apptRanges = useMemo(() => {
     return existingAppointments.map(a => ({
       start: new Date(a.start),
@@ -62,46 +60,38 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     }));
   }, [existingAppointments]);
 
-  // build slots for a given date, filtering out conflicts
-  const computeSlots = (date: Date): Date[] => {
-    const slots: Date[] = [];
+  const computeSlots = useCallback((date: Date): Slot[] => {
+    const slots: Slot[] = [];
     const [sh, sm] = workingHours.start.split(':').map(Number);
     const [eh, em] = workingHours.end.split(':').map(Number);
-
     const start = new Date(date); start.setHours(sh, sm, 0, 0);
     const end = new Date(date); end.setHours(eh, em, 0, 0);
 
     let cursor = new Date(start);
     while (cursor < end) {
-      // skip past times if today
-      if (
-        cursor > new Date() ||
-        cursor.toDateString() !== new Date().toDateString()
-      ) {
-        // check conflict
-        const conflict = apptRanges.some(r =>
-          cursor >= r.start && cursor < r.end
-        );
-        if (!conflict) slots.push(new Date(cursor));
-      }
+      const now = new Date();
+      const isPast = cursor < now && cursor.toDateString() === now.toDateString();
+      const conflict = apptRanges.some(r =>
+        cursor >= r.start && cursor < r.end
+      );
+      slots.push({
+        time: new Date(cursor),
+        available: !conflict && !isPast,
+      });
       cursor = new Date(cursor.getTime() + slotInterval * 60_000);
     }
     return slots;
-  };
+  }, [workingHours, apptRanges, slotInterval]);
 
-  // for each day, know if it has any free slots
-  const dayHasFreeSlots = (day: Date) => {
-    // only if weekday is in workingDays
+  const dayHasFreeSlots = useCallback((day: Date) => {
     if (!workingDays.includes(daysMap[day.getDay()])) return false;
-    return computeSlots(day).length > 0;
-  };
+    return computeSlots(day).some(s => s.available);
+  }, [workingDays, computeSlots]);
 
-  // once you pick a day, generate its slots
-  const slots = useMemo(() => {
+  const slots = useMemo<Slot[]>(() => {
     return selectedDate ? computeSlots(selectedDate) : [];
-  }, [selectedDate, apptRanges]);
+  }, [selectedDate, computeSlots]);
 
-  // reset on open
   useEffect(() => {
     if (visible) {
       setSelectedDate(null);
@@ -117,38 +107,41 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onCancel}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onCancel}
+    >
       <View style={styles.overlay}>
         <View style={styles.container}>
-
           {/* Calendar */}
           <FlatList
-            horizontal data={days}
+            horizontal
+            data={days}
             keyExtractor={d => d.toISOString()}
             contentContainerStyle={styles.calendar}
             renderItem={({ item }) => {
-              const wd = item.getDay();
-              const label = item.toLocaleDateString('pt-BR', { weekday: 'short' });
-              const num = item.getDate();
-              const isWorkday = workingDays.includes(daysMap[wd]);
+              const dayName = item.toLocaleDateString('pt-BR', { weekday: 'short' });
+              const dayNum = item.getDate();
+              const isWorkday = workingDays.includes(daysMap[item.getDay()]);
               const hasFree = dayHasFreeSlots(item);
-              const isSel = selectedDate?.toDateString() === item.toDateString();
-
+              const isSelected = selectedDate?.toDateString() === item.toDateString();
               return (
                 <TouchableOpacity
-                  disabled={!(isWorkday && hasFree)}
+                  disabled={!isWorkday || !hasFree}
                   onPress={() => setSelectedDate(item)}
                   style={[
                     styles.dayBtn,
                     !isWorkday || !hasFree ? styles.dayDisabled : styles.dayEnabled,
-                    isSel && styles.daySelected,
+                    isSelected && styles.daySelected,
                   ]}
                 >
-                  <Text style={(!isWorkday || !hasFree) ? styles.dayTextDisabled : styles.dayText}>
-                    {label}
+                  <Text style={!isWorkday || !hasFree ? styles.dayTextDisabled : styles.dayText}>
+                    {dayName}
                   </Text>
-                  <Text style={(!isWorkday || !hasFree) ? styles.dayTextDisabled : styles.dayText}>
-                    {num}
+                  <Text style={!isWorkday || !hasFree ? styles.dayTextDisabled : styles.dayText}>
+                    {dayNum}
                   </Text>
                 </TouchableOpacity>
               );
@@ -159,24 +152,31 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           {selectedDate ? (
             <FlatList
               data={slots}
-              keyExtractor={d => d.toISOString()}
+              keyExtractor={s => s.time.toISOString()}
               numColumns={3}
               contentContainerStyle={styles.slots}
               renderItem={({ item }) => {
-                const lbl = item.toLocaleTimeString('pt-BR', {
+                const label = item.time.toLocaleTimeString('pt-BR', {
                   hour: '2-digit', minute: '2-digit'
                 });
-                const isSel = selectedTime?.getTime() === item.getTime();
+                const isSelected = selectedTime?.getTime() === item.time.getTime();
                 return (
                   <TouchableOpacity
-                    onPress={() => setSelectedTime(item)}
+                    disabled={!item.available}
+                    onPress={() => setSelectedTime(item.time)}
                     style={[
                       styles.slotBtn,
-                      isSel ? styles.slotSelected : styles.slotEnabled,
+                      item.available
+                        ? (isSelected ? styles.slotSelected : styles.slotEnabled)
+                        : styles.slotUnavailable,
                     ]}
                   >
-                    <Text style={isSel ? styles.slotTextSelected : styles.slotText}>
-                      {lbl}
+                    <Text style={
+                      item.available
+                        ? (isSelected ? styles.slotTextSelected : styles.slotText)
+                        : styles.slotTextUnavailable
+                    }>
+                      {label}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -190,7 +190,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             </View>
           )}
 
-          {/* Buttons */}
+          {/* Footer */}
           <View style={styles.footer}>
             <Button label="Cancelar" link onPress={onCancel} style={styles.footerBtn} />
             <Button
@@ -208,17 +208,27 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16,
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   container: {
-    width: '100%', maxWidth: MODAL_WIDTH,
-    backgroundColor: '#fff', borderRadius: 8, padding: 16,
+    width: '100%',
+    maxWidth: MODAL_WIDTH,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
   },
   calendar: { paddingVertical: 8 },
   dayBtn: {
-    width: 60, height: 80, marginHorizontal: 4,
-    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+    width: 60,
+    height: 80,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dayEnabled: { backgroundColor: Colors.blue60 },
   dayDisabled: { backgroundColor: Colors.grey70 },
@@ -228,19 +238,27 @@ const styles = StyleSheet.create({
 
   slots: { marginTop: 16, justifyContent: 'center' },
   slotBtn: {
-    flex: 1, margin: 4, paddingVertical: 8,
-    borderRadius: 6, alignItems: 'center',
+    flex: 1,
+    margin: 4,
+    paddingVertical: 8,
+    borderRadius: 6,
+    alignItems: 'center',
   },
   slotEnabled: { backgroundColor: Colors.blue60 },
   slotSelected: { backgroundColor: Colors.green30 },
+  slotUnavailable: { backgroundColor: Colors.grey40 },
   slotText: { color: '#fff' },
   slotTextSelected: { color: '#fff', fontWeight: '600' },
+  slotTextUnavailable: { color: '#666' },
 
   placeholder: { paddingVertical: 32, justifyContent: 'center' },
 
   footer: {
-    flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 24,
   },
   footerBtn: { marginLeft: 8 },
   disabledBtn: { backgroundColor: Colors.grey40 },
 });
+

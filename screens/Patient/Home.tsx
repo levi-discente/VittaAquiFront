@@ -76,8 +76,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
         setFullList(list);
         setPage(1);
       } catch (e) {
-        console.error("Erro ao buscar profissionais ", e);
-        setError('Erro ao buscar profissionais');
+        setError('Nenhuma profissional econtrado');
       } finally {
         setLoading(false);
       }
@@ -95,16 +94,23 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
     });
   }, [search, category, tags, onlyOnline, onlyPresential, fetchProfessionals]);
 
+  // 1) ao montar a tela
   useEffect(() => {
     applyFilters();
   }, []);
 
+  // 2) quando a categoria mudar, refaz automaticamente
+  useEffect(() => {
+    applyFilters();
+  }, [category]);
+
   const [filterVisible, setFilterVisible] = useState(false);
+  // 3) quando fechar o modal de filtros, refaz automaticamente
   useEffect(() => {
     if (!filterVisible) {
       applyFilters();
     }
-  }, [filterVisible, tags, onlyOnline, onlyPresential]);
+  }, [filterVisible]);
 
   const [tagsInput, setTagsInput] = useState(tags.join(','));
 
@@ -155,10 +161,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
                   active && styles.chipActive,
                   { marginRight: PADDING * 0.5 },
                 ]}
-                onPress={() => {
-                  setCategory(opt.value);
-                  applyFilters();
-                }}
+                onPress={() => setCategory(opt.value)}
               >
                 <RNText
                   style={[styles.chipText, active && styles.chipTextActive]}
@@ -246,7 +249,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
           }
           contentContainerStyle={[
             { paddingTop: 12, paddingBottom: 24 },
-            columns === 1 ? { alignItems: 'center' } : undefined,
+            columns === 1 ? { alignItems: 'center' } : undefined
           ]}
           renderItem={({ item }) => (
             <View
@@ -258,9 +261,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
             >
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate('ProfessionalDetail', {
-                    profileId: item.id,
-                  })
+                  navigation.navigate('ProfessionalDetail', { profileId: item.id })
                 }
               >
                 <ProfessionalCard profile={item} />
@@ -272,17 +273,13 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       )}
 
-
       {/* ===== paginação ===== */}
       {!loading && !error && (
         <View style={[styles.pagination, { paddingHorizontal: PADDING }]}>
           <TouchableOpacity
             disabled={page <= 1}
             onPress={() => setPage(p => Math.max(1, p - 1))}
-            style={[
-              styles.pageIconContainer,
-              page <= 1 && styles.pageIconDisabled,
-            ]}
+            style={[styles.pageIconContainer, page <= 1 && styles.pageIconDisabled]}
           >
             <Ionicons
               name="chevron-back"
@@ -291,17 +288,12 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
             />
           </TouchableOpacity>
 
-          <RNText style={styles.pageInfo}>
-            {page} / {totalPages}
-          </RNText>
+          <RNText style={styles.pageInfo}>{page} / {totalPages}</RNText>
 
           <TouchableOpacity
             disabled={page >= totalPages}
             onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-            style={[
-              styles.pageIconContainer,
-              page >= totalPages && styles.pageIconDisabled,
-            ]}
+            style={[styles.pageIconContainer, page >= totalPages && styles.pageIconDisabled]}
           >
             <Ionicons
               name="chevron-forward"
@@ -312,7 +304,6 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       )}
 
-
       {/* ===== modal de filtros ===== */}
       <Modal
         visible={filterVisible}
@@ -322,11 +313,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-
-            {/* Título */}
             <RNText style={styles.modalTitle}>Filtros</RNText>
-
-            {/* Badges para Online / Presencial */}
             <View style={styles.modalBadgeRow}>
               <TouchableOpacity
                 style={[styles.modalBadge, onlyOnline && styles.modalBadgeActive]}
@@ -338,15 +325,11 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
                   color={onlyOnline ? '#fff' : Colors.grey40}
                 />
                 <RNText
-                  style={[
-                    styles.modalBadgeText,
-                    onlyOnline && styles.modalBadgeTextActive
-                  ]}
+                  style={[styles.modalBadgeText, onlyOnline && styles.modalBadgeTextActive]}
                 >
                   Online
                 </RNText>
               </TouchableOpacity>
-
               <TouchableOpacity
                 style={[styles.modalBadge, onlyPresential && styles.modalBadgeActive]}
                 onPress={() => setOnlyPresential(v => !v)}
@@ -357,17 +340,12 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
                   color={onlyPresential ? '#fff' : Colors.grey40}
                 />
                 <RNText
-                  style={[
-                    styles.modalBadgeText,
-                    onlyPresential && styles.modalBadgeTextActive
-                  ]}
+                  style={[styles.modalBadgeText, onlyPresential && styles.modalBadgeTextActive]}
                 >
                   Presencial
                 </RNText>
               </TouchableOpacity>
             </View>
-
-            {/* Input de Tags */}
             <TextInput
               style={styles.modalInput}
               placeholder="Tags (vírgula)"
@@ -376,38 +354,21 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
               returnKeyType="done"
               onSubmitEditing={onApplyModal}
             />
-
-            {/* Botões */}
             <View style={styles.modalButtons}>
               <Button label="Cancelar" outline onPress={onCancelModal} />
-              <Button
-                label="Aplicar"
-                onPress={onApplyModal}
-                style={{ marginLeft: 12 }}
-              />
+              <Button label="Aplicar" onPress={onApplyModal} style={{ marginLeft: 12 }} />
             </View>
-
           </View>
         </View>
       </Modal>
-
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F5F5' },
-  loaderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chip: {
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: '#ECECEC',
-    justifyContent: 'center',
-  },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  chip: { paddingHorizontal: 12, borderRadius: 16, backgroundColor: '#ECECEC', justifyContent: 'center' },
   chipActive: { backgroundColor: Colors.blue30 },
   chipText: { fontSize: 14, color: '#555' },
   chipTextActive: { color: '#FFF', fontWeight: '600' },
@@ -421,120 +382,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#FAFAFA',
     height: 40,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.blue30,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginRight: 8,
-  },
+  badge: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.blue30, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4, marginRight: 8 },
   badgeText: { color: '#FFF', fontSize: 12 },
-  errorText: {
-    textAlign: 'center',
-    color: Colors.red30,
-    marginTop: 32,
-  },
-  pageButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.blue30,
-  },
-  pageButtonDisabled: { backgroundColor: Colors.grey40 },
-  pageButtonText: { color: '#FFF', fontSize: 14 },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: '#00000066',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#FFF',
-    padding: 16,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-  },
+  errorText: { textAlign: 'center', color: Colors.red30, marginTop: 32 },
+  pagination: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingVertical: 12, backgroundColor: '#FFF' },
+  pageIconContainer: { padding: 8, borderRadius: 8 },
+  pageIconDisabled: { opacity: 0.3 },
+  pageInfo: { marginHorizontal: 16, fontSize: 16, color: '#333', fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: '#00000066', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: '#FFF', padding: 16, borderTopLeftRadius: 12, borderTopRightRadius: 12 },
   modalTitle: { fontSize: 18, fontWeight: '600', marginBottom: 12 },
-  modalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  switch: {
-    width: 32,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#ECECEC',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  switchActive: {
-    backgroundColor: Colors.green30,
-  },
-
-  modalBadgeRow: {
-    flexDirection: 'row',
-    marginBottom: 12,
-  },
-  modalBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ECECEC',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-  },
-  modalBadgeActive: {
-    backgroundColor: Colors.green30,
-  },
-  modalBadgeText: {
-    fontSize: 14,
-    color: '#555',
-    marginLeft: 6,
-  },
-  modalBadgeTextActive: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  modalInput: {
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#DDD',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    backgroundColor: '#FAFAFA',
-    height: 40,
-    marginBottom: 16,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-  },
-  pageIconContainer: {
-    padding: 8,
-    borderRadius: 8,
-  },
-  pageIconDisabled: {
-    opacity: 0.3,
-  },
-  pageInfo: {
-    marginHorizontal: 16,
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '600',
-  },
-
-
+  modalBadgeRow: { flexDirection: 'row', marginBottom: 12 },
+  modalBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECECEC', borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6, marginRight: 8 },
+  modalBadgeActive: { backgroundColor: Colors.green30 },
+  modalBadgeText: { fontSize: 14, color: '#555', marginLeft: 6 },
+  modalBadgeTextActive: { color: '#fff', fontWeight: '600' },
+  modalInput: { borderWidth: StyleSheet.hairlineWidth, borderColor: '#DDD', borderRadius: 4, paddingHorizontal: 12, backgroundColor: '#FAFAFA', height: 40, marginBottom: 16 },
+  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
 });
 
 export default PatientHomeScreen;
-

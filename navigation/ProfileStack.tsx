@@ -3,9 +3,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import PatientHomeScreen from '@/screens/Patient/Home';
 import ProfessionalDetailScreen from '@/screens/Patient/ProfessionalDetailScreen';
+import { MyAppointmentsScreen } from '@/screens/Common/MyAppointmentsScreen';
 
 export type ProfileStackParamList = {
   PatientHome: undefined;
+  MyAppointments: undefined;
   ProfessionalDetail: { profileId: string };
 };
 
@@ -18,10 +20,17 @@ const ProfileStack: React.FC = () => (
       component={PatientHomeScreen}
       options={{ headerShown: false }}
     />
+
+    <Stack.Screen
+      name="MyAppointments"
+      component={MyAppointmentsScreen}
+      options={{ title: 'Meus Agendamentos' }}
+    />
+
     <Stack.Screen
       name="ProfessionalDetail"
       component={ProfessionalDetailScreen}
-      options={{ title: "Detalhes", headerShown: true }}
+      options={{ title: 'Detalhes', headerShown: true }}
     />
   </Stack.Navigator>
 );

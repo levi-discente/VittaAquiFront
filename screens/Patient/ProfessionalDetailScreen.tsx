@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   SafeAreaView,
   View,
@@ -33,7 +33,9 @@ const CONTENT_WIDTH = Math.min(width - PADDING * 2, 500);
 const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { profileId } = route.params;
   const { profile, loading, error, refresh } = useProfessionalProfile(profileId);
-  const { appointments, loading: schedLoading } = useProfessionalSchedule(Number(profileId));
+  const { appointments, loading: schedLoading } = useProfessionalSchedule(
+    Number(profileId)
+  );
 
   const [bookingVisible, setBookingVisible] = useState(false);
 
@@ -42,6 +44,8 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       ? profile.services
       : profile.services.split(',')
     : [];
+
+  const scheduleList = appointments ?? [];
 
   const onShare = async () => {
     if (!profile) return;
@@ -53,7 +57,6 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const sendEmail = (email: string) => Linking.openURL(`mailto:${email}`);
   const copyToClipboard = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    // aqui você pode disparar um Snackbar/Toast se quiser
   };
   const openMap = () => {
     if (!profile) return;
@@ -65,11 +68,13 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     Linking.openURL(url);
   };
 
-  // configura headerRight de compartilhamento
+
   useEffect(() => {
     if (profile) {
       navigation.setOptions({
         title: profile.userName,
+        headerLargeTitle: false,
+        headerTitleAlign: 'center',
         headerRight: () => (
           <TouchableOpacity onPress={onShare} style={styles.headerShare}>
             <Ionicons name="share-social" size={24} color={Colors.blue30} />
@@ -78,6 +83,7 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       });
     }
   }, [profile]);
+
 
   if (loading) {
     return (
@@ -112,7 +118,11 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           {profile.imageUrl ? (
             <Image source={{ uri: profile.imageUrl }} style={styles.avatar} />
           ) : (
-            <Ionicons name="person-circle" size={100} color={Colors.$backgroundDark} />
+            <Ionicons
+              name="person-circle"
+              size={100}
+              color={Colors.$backgroundDark}
+            />
           )}
           <View style={styles.heroInfo}>
             <Text text35m>{profile.userName}</Text>
@@ -158,13 +168,14 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text text100M style={styles.sectionTitle}>Contato</Text>
           <View style={styles.detailRow}>
             <Ionicons name="mail" size={18} color={Colors.grey40} />
-            {/* só o texto é clicável até onde termina */}
             <TouchableOpacity
               onPress={() => sendEmail(profile.email)}
               onLongPress={() => copyToClipboard(profile.email)}
               style={styles.touchableText}
             >
-              <Text text90 style={styles.detailText}>{profile.email}</Text>
+              <Text text90 style={styles.detailText}>
+                {profile.email}
+              </Text>
             </TouchableOpacity>
           </View>
           {profile.phone && (
@@ -205,7 +216,9 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               onLongPress={() => copyToClipboard(profile.address)}
               style={styles.touchableText}
             >
-              <Text text90 style={styles.detailText}>{profile.address}</Text>
+              <Text text90 style={styles.detailText}>
+                {profile.address}
+              </Text>
             </TouchableOpacity>
           </View>
           <View style={styles.mapContainer}>
@@ -213,7 +226,8 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               cep={profile.cep}
               height={200}
               width={CONTENT_WIDTH - 32}
-              style={{ borderRadius: 8, overflow: 'hidden' }} />
+              style={{ borderRadius: 8, overflow: 'hidden' }}
+            />
           </View>
         </Card>
 
@@ -221,7 +235,7 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Card style={[styles.sectionCard, { width: CONTENT_WIDTH }]}>
           <Text text100M style={styles.sectionTitle}>Serviços</Text>
           <View style={styles.chipContainer}>
-            {servicesList.map(s => (
+            {servicesList.map((s) => (
               <View key={s} style={styles.chip}>
                 <Text text90>{s.trim()}</Text>
               </View>
@@ -233,9 +247,11 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Card style={[styles.sectionCard, { width: CONTENT_WIDTH }]}>
           <Text text100M style={styles.sectionTitle}>Tags</Text>
           <View style={styles.chipContainer}>
-            {profile.tags.map(t => (
+            {(profile.tags ?? []).map((t) => (
               <View key={t} style={styles.tag}>
-                <Text text90 white>{t}</Text>
+                <Text text90 white>
+                  {t}
+                </Text>
               </View>
             ))}
           </View>
@@ -244,7 +260,9 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* BIO */}
         <Card style={[styles.sectionCard, { width: CONTENT_WIDTH }]}>
           <Text text100M style={styles.sectionTitle}>Sobre</Text>
-          <Text text90 style={styles.sectionContent}>{profile.bio}</Text>
+          <Text text90 style={styles.sectionContent}>
+            {profile.bio}
+          </Text>
         </Card>
 
         {/* REVIEWS */}
@@ -273,17 +291,28 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             outlineColor={Colors.blue30}
             label=" Conversar"
             labelStyle={{ color: Colors.blue30 }}
-            iconSource={() => <Ionicons name="chatbubble-outline" size={20} color={Colors.blue30} />}
+            iconSource={() => (
+              <Ionicons
+                name="chatbubble-outline"
+                size={20}
+                color={Colors.blue30}
+              />
+            )}
             style={styles.actionBtn}
-            onPress={() => {/* navegar para chat */ }}
+            onPress={() => {
+              /* navegar para chat */
+            }}
           />
           <Button
             label=" Agendar"
-            iconSource={() => <Ionicons name="calendar-outline" size={20} color="#fff" />}
+            iconSource={() => (
+              <Ionicons name="calendar-outline" size={20} color="#fff" />
+            )}
             style={[styles.actionBtn, styles.bookBtn]}
             onPress={() => setBookingVisible(true)}
           />
         </View>
+
         <AppointmentModal
           visible={bookingVisible}
           onCancel={() => setBookingVisible(false)}
@@ -296,21 +325,20 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               });
               setBookingVisible(false);
               navigation.navigate('MyAppointments');
-            } catch (e) {
+            } catch {
+              // tratar erro
             }
           }}
           workingDays={profile.availableDaysOfWeek}
           workingHours={{ start: profile.startHour, end: profile.endHour }}
-          existingAppointments={appointments.map(a => ({
+          existingAppointments={scheduleList.map((a) => ({
             start: a.start_time,
             end: a.end_time,
           }))}
-
           slotInterval={60}
           daysAhead={14}
           durationMinutes={60}
         />
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -343,7 +371,6 @@ const styles = StyleSheet.create({
   },
   headerShare: { marginRight: 12 },
 
-  // HERO
   hero: {
     alignItems: 'center',
     marginBottom: 24,
@@ -398,7 +425,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   touchableText: {
-    // só envolve o texto, não expande pra toda a linha
     paddingHorizontal: 4,
   },
   detailText: { marginLeft: 8 },
@@ -462,4 +488,3 @@ const styles = StyleSheet.create({
 });
 
 export default ProfessionalDetailScreen;
-

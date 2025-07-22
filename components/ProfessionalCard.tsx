@@ -77,12 +77,12 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
       <View style={styles.flags}>
         {onlyOnline != null && (
           <Text style={[styles.flag, onlyOnline ? styles.online : styles.offline]}>
-            {onlyOnline ? 'Online' : 'Offline'}
+            {onlyOnline ? 'Somente Online' : ''}
           </Text>
         )}
         {onlyPresential != null && (
           <Text style={[styles.flag, onlyPresential ? styles.presential : styles.offline]}>
-            {onlyPresential ? 'Presencial' : 'Não Presencial'}
+            {onlyPresential ? 'Somente Presencial' : ''}
           </Text>
         )}
       </View>
