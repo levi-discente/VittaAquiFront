@@ -75,7 +75,8 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
         const list = await listProfessionals(filters);
         setFullList(list);
         setPage(1);
-      } catch {
+      } catch (e) {
+        console.error("Erro ao buscar profissionais ", e);
         setError('Erro ao buscar profissionais');
       } finally {
         setLoading(false);
@@ -98,8 +99,13 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
     applyFilters();
   }, []);
 
-  // modal state + local tags input
   const [filterVisible, setFilterVisible] = useState(false);
+  useEffect(() => {
+    if (!filterVisible) {
+      applyFilters();
+    }
+  }, [filterVisible, tags, onlyOnline, onlyPresential]);
+
   const [tagsInput, setTagsInput] = useState(tags.join(','));
 
   const openFilterModal = () => {
@@ -113,14 +119,12 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
       .filter(Boolean);
     setTags(newTags);
     setFilterVisible(false);
-    applyFilters();
   };
   const onCancelModal = () => {
     setFilterVisible(false);
   };
   const removeTag = (tag: string) => {
     setTags(prev => prev.filter(t => t !== tag));
-    setTimeout(applyFilters, 0);
   };
 
   if (loading && page === 1) {
@@ -176,12 +180,13 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
             returnKeyType="search"
             onSubmitEditing={applyFilters}
           />
-          <Button
-            label="Buscar"
-            outline
-            style={{ marginLeft: 8 }}
+
+          <TouchableOpacity
+            style={{ marginLeft: 8, padding: 8 }}
             onPress={applyFilters}
-          />
+          >
+            <Ionicons name="search" size={24} color={Colors.$iconSuccessLight} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={{ marginLeft: 8, padding: 8 }}
             onPress={openFilterModal}
@@ -267,6 +272,7 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       )}
 
+
       {/* ===== paginação ===== */}
       {!loading && !error && (
         <View style={[styles.pagination, { paddingHorizontal: PADDING }]}>
@@ -274,27 +280,38 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
             disabled={page <= 1}
             onPress={() => setPage(p => Math.max(1, p - 1))}
             style={[
-              styles.pageButton,
-              page <= 1 && styles.pageButtonDisabled,
+              styles.pageIconContainer,
+              page <= 1 && styles.pageIconDisabled,
             ]}
           >
-            <RNText style={styles.pageButtonText}>Anterior</RNText>
+            <Ionicons
+              name="chevron-back"
+              size={24}
+              color={page <= 1 ? Colors.grey40 : Colors.blue30}
+            />
           </TouchableOpacity>
+
           <RNText style={styles.pageInfo}>
             {page} / {totalPages}
           </RNText>
+
           <TouchableOpacity
             disabled={page >= totalPages}
             onPress={() => setPage(p => Math.min(totalPages, p + 1))}
             style={[
-              styles.pageButton,
-              page >= totalPages && styles.pageButtonDisabled,
+              styles.pageIconContainer,
+              page >= totalPages && styles.pageIconDisabled,
             ]}
           >
-            <RNText style={styles.pageButtonText}>Próxima</RNText>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={page >= totalPages ? Colors.grey40 : Colors.blue30}
+            />
           </TouchableOpacity>
         </View>
       )}
+
 
       {/* ===== modal de filtros ===== */}
       <Modal
@@ -305,53 +322,75 @@ const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
+
+            {/* Título */}
             <RNText style={styles.modalTitle}>Filtros</RNText>
-            <View style={styles.modalRow}>
-              <RNText>Online</RNText>
+
+            {/* Badges para Online / Presencial */}
+            <View style={styles.modalBadgeRow}>
               <TouchableOpacity
+                style={[styles.modalBadge, onlyOnline && styles.modalBadgeActive]}
                 onPress={() => setOnlyOnline(v => !v)}
-                style={[
-                  styles.switch,
-                  onlyOnline && styles.switchActive,
-                ]}
               >
                 <Ionicons
-                  name={onlyOnline ? 'checkmark' : 'ellipse-outline'}
-                  size={20}
+                  name="phone-portrait"
+                  size={16}
                   color={onlyOnline ? '#fff' : Colors.grey40}
                 />
+                <RNText
+                  style={[
+                    styles.modalBadgeText,
+                    onlyOnline && styles.modalBadgeTextActive
+                  ]}
+                >
+                  Online
+                </RNText>
               </TouchableOpacity>
-            </View>
-            <View style={styles.modalRow}>
-              <RNText>Presencial</RNText>
+
               <TouchableOpacity
+                style={[styles.modalBadge, onlyPresential && styles.modalBadgeActive]}
                 onPress={() => setOnlyPresential(v => !v)}
-                style={[
-                  styles.switch,
-                  onlyPresential && styles.switchActive,
-                ]}
               >
                 <Ionicons
-                  name={onlyPresential ? 'checkmark' : 'ellipse-outline'}
-                  size={20}
+                  name="home"
+                  size={16}
                   color={onlyPresential ? '#fff' : Colors.grey40}
                 />
+                <RNText
+                  style={[
+                    styles.modalBadgeText,
+                    onlyPresential && styles.modalBadgeTextActive
+                  ]}
+                >
+                  Presencial
+                </RNText>
               </TouchableOpacity>
             </View>
-            <RNText
+
+            {/* Input de Tags */}
+            <TextInput
               style={styles.modalInput}
               placeholder="Tags (vírgula)"
               value={tagsInput}
               onChangeText={setTagsInput}
               returnKeyType="done"
+              onSubmitEditing={onApplyModal}
             />
+
+            {/* Botões */}
             <View style={styles.modalButtons}>
               <Button label="Cancelar" outline onPress={onCancelModal} />
-              <Button label="Aplicar" onPress={onApplyModal} style={{ marginLeft: 12 }} />
+              <Button
+                label="Aplicar"
+                onPress={onApplyModal}
+                style={{ marginLeft: 12 }}
+              />
             </View>
+
           </View>
         </View>
       </Modal>
+
     </SafeAreaView>
   );
 };
@@ -397,13 +436,6 @@ const styles = StyleSheet.create({
     color: Colors.red30,
     marginTop: 32,
   },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#FFF',
-  },
   pageButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -412,7 +444,6 @@ const styles = StyleSheet.create({
   },
   pageButtonDisabled: { backgroundColor: Colors.grey40 },
   pageButtonText: { color: '#FFF', fontSize: 14 },
-  pageInfo: { fontSize: 14, color: '#333' },
   modalOverlay: {
     flex: 1,
     backgroundColor: '#00000066',
@@ -442,6 +473,32 @@ const styles = StyleSheet.create({
   switchActive: {
     backgroundColor: Colors.green30,
   },
+
+  modalBadgeRow: {
+    flexDirection: 'row',
+    marginBottom: 12,
+  },
+  modalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECECEC',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  modalBadgeActive: {
+    backgroundColor: Colors.green30,
+  },
+  modalBadgeText: {
+    fontSize: 14,
+    color: '#555',
+    marginLeft: 6,
+  },
+  modalBadgeTextActive: {
+    color: '#fff',
+    fontWeight: '600',
+  },
   modalInput: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#DDD',
@@ -451,7 +508,32 @@ const styles = StyleSheet.create({
     height: 40,
     marginBottom: 16,
   },
-  modalButtons: { flexDirection: 'row', justifyContent: 'flex-end' },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  pagination: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#FFF',
+  },
+  pageIconContainer: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  pageIconDisabled: {
+    opacity: 0.3,
+  },
+  pageInfo: {
+    marginHorizontal: 16,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '600',
+  },
+
+
 });
 
 export default PatientHomeScreen;

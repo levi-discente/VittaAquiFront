@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -20,6 +20,9 @@ import { ProfileStackParamList } from '@/navigation/ProfileStack';
 import { useProfessionalProfile } from '@/hooks/useProfessionals';
 import { maskPhone } from '@/utils/forms';
 import MapComponent from '@/components/MapComponent';
+import { AppointmentModal } from '@/components/AppointmentModal';
+import { createAppointment } from '@/api/appointment';
+import { useProfessionalSchedule } from '@/hooks/useAppointments';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfessionalDetail'>;
 
@@ -30,6 +33,9 @@ const CONTENT_WIDTH = Math.min(width - PADDING * 2, 500);
 const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { profileId } = route.params;
   const { profile, loading, error, refresh } = useProfessionalProfile(profileId);
+  const { appointments, loading: schedLoading } = useProfessionalSchedule(Number(profileId));
+
+  const [bookingVisible, setBookingVisible] = useState(false);
 
   const servicesList: string[] = profile?.services
     ? Array.isArray(profile.services)
@@ -275,9 +281,36 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             label=" Agendar"
             iconSource={() => <Ionicons name="calendar-outline" size={20} color="#fff" />}
             style={[styles.actionBtn, styles.bookBtn]}
-            onPress={() => navigation.navigate('Booking', { profileId })}
+            onPress={() => setBookingVisible(true)}
           />
         </View>
+        <AppointmentModal
+          visible={bookingVisible}
+          onCancel={() => setBookingVisible(false)}
+          onConfirm={async (startISO, endISO) => {
+            try {
+              await createAppointment({
+                professional_id: Number(profileId),
+                start_time: startISO,
+                end_time: endISO,
+              });
+              setBookingVisible(false);
+              navigation.navigate('MyAppointments');
+            } catch (e) {
+            }
+          }}
+          workingDays={profile.availableDaysOfWeek}
+          workingHours={{ start: profile.startHour, end: profile.endHour }}
+          existingAppointments={appointments.map(a => ({
+            start: a.start_time,
+            end: a.end_time,
+          }))}
+
+          slotInterval={60}
+          daysAhead={14}
+          durationMinutes={60}
+        />
+
       </ScrollView>
     </SafeAreaView>
   );

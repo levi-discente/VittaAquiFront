@@ -1,3 +1,10 @@
+export interface UnavailableDate {
+  id: number;
+  profileId: number;
+  date: string;
+  reason: string;
+}
+
 export interface ProfessionalProfile {
   id: string;
   userId: string;
@@ -19,8 +26,11 @@ export interface ProfessionalProfile {
   rating: number;
   numReviews: number;
   imageUrl?: string;
+  availableDaysOfWeek: string[];
+  startHour: string;
+  endHour: string;
+  unavailableDates: UnavailableDate[];
 }
-
 
 export interface ProfessionalFilter {
   category?: string;
@@ -30,8 +40,8 @@ export interface ProfessionalFilter {
   only_presential?: boolean;
 }
 
-
 export interface ProfessionalListResponse {
   professionals: ProfessionalProfile[];
   total: number;
 }
+

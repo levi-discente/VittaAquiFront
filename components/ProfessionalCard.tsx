@@ -31,8 +31,8 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
     services,
     price,
     tags,
-    online,
-    presencial
+    onlyOnline,
+    onlyPresential,
   } = profile;
 
   return (
@@ -75,14 +75,14 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
 
       {/* Indicadores online/presencial */}
       <View style={styles.flags}>
-        {online != null && (
-          <Text style={[styles.flag, online ? styles.online : styles.offline]}>
-            {online ? 'Online' : 'Offline'}
+        {onlyOnline != null && (
+          <Text style={[styles.flag, onlyOnline ? styles.online : styles.offline]}>
+            {onlyOnline ? 'Online' : 'Offline'}
           </Text>
         )}
-        {presencial != null && (
-          <Text style={[styles.flag, presencial ? styles.presential : styles.offline]}>
-            {presencial ? 'Presencial' : 'Não Presencial'}
+        {onlyPresential != null && (
+          <Text style={[styles.flag, onlyPresential ? styles.presential : styles.offline]}>
+            {onlyPresential ? 'Presencial' : 'Não Presencial'}
           </Text>
         )}
       </View>

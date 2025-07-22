@@ -6,6 +6,7 @@ import ProfessionalAgendaScreen from '@/screens/Professional/ProfessionalFormScr
 import { usePermissions } from '@/context/PermissionContext';
 import PatientHomeScreen from '@/screens/Patient/Home';
 import ProfileStack from './ProfileStack';
+import MyAppointmentsScreen from '@/screens/Common/MyAppointmentsScreen';
 
 export type TabParamList = {
   Home: undefined;
@@ -41,13 +42,11 @@ const TabNavigator: React.FC = () => {
       />
 
       {/* Agenda só para quem tem permissão */}
-      {canViewProfessionalAgenda && (
-        <Tab.Screen
-          name="Agenda"
-          component={ProfessionalAgendaScreen}
-          options={{ title: 'Agenda' }}
-        />
-      )}
+      <Tab.Screen
+        name="Agenda"
+        component={MyAppointmentsScreen}
+        options={{ title: 'Agenda' }}
+      />
     </Tab.Navigator>
 
   );

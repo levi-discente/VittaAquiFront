@@ -1,0 +1,24 @@
+export interface Appointment {
+  id: number;
+  patient_id: number;
+  patientName?: string;
+  professional_id: number;
+  professionalName?: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAppointmentData {
+  professional_id: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface UpdateAppointmentData {
+  startTime: string;
+  endTime: string;
+  status: string;
+}
