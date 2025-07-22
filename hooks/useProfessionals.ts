@@ -1,29 +1,70 @@
-import { useEffect, useState } from 'react';
-import { listProfessionals } from '../api/professional';
-import { ProfessionalProfile, ProfessionalFilters } from '../types/professional';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  getProfessionalProfileById,
+  listProfessionals
+} from '@/api/professional';
+import {
+  ProfessionalFilter,
+  ProfessionalProfile
+} from '@/types/professional';
 
-export const useProfessionals = (filters?: ProfessionalFilters) => {
+export const useProfessionals = (filters: ProfessionalFilter) => {
   const [professionals, setProfessionals] = useState<ProfessionalProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProfessionals = async () => {
+  const fetchList = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await listProfessionals(filters);
-      setProfessionals(response.professionals);
-    } catch (err) {
-      console.log(err);
-      setError('Erro ao buscar profissionais.');
+      const list = await listProfessionals(filters);
+      setProfessionals(list);
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.error ??
+        err.message ??
+        'Erro ao buscar profissionais.'
+      );
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProfessionals();
   }, [filters]);
 
-  return { professionals, loading, error, refresh: fetchProfessionals };
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
+
+  return { professionals, loading, error, refresh: fetchList };
 };
+
+export const useProfessionalProfile = (profileId: string) => {
+  const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProfessionalProfileById(profileId);
+      setProfile(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.error ??
+        err.message ??
+        'Erro ao carregar perfil.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [profileId]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  return { profile, loading, error, refresh: fetchProfile };
+};
+

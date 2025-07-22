@@ -1,15 +1,14 @@
-import React from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import {
   createDrawerNavigator,
   DrawerContentScrollView,
-  DrawerItemList,
   DrawerItem,
+  DrawerItemList,
 } from '@react-navigation/drawer';
+import React from 'react';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useAuth } from '@/hooks/useAuth';
-
+import ProfileScreen from '@/screens/Common/ProfileScreen';
 import TabNavigator from './TabNavigator';
-import ProfileScreen from '@/screens/Profile/ProfileScreen';
 
 export type DrawerParamList = {
   Início: undefined;

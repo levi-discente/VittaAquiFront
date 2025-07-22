@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    color: '#fff',
+    color: Colors.blue5,
   },
   flags: {
     flexDirection: 'row',

@@ -2,9 +2,10 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import PatientHomeScreen from '@/screens/Home';
 import ProfessionalAgendaScreen from '@/screens/Professional/ProfessionalFormScreen'; // ou outro componente de agenda
 import { usePermissions } from '@/context/PermissionContext';
+import PatientHomeScreen from '@/screens/Patient/Home';
+import ProfileStack from './ProfileStack';
 
 export type TabParamList = {
   Home: undefined;
@@ -35,7 +36,7 @@ const TabNavigator: React.FC = () => {
       {/* Home fica sempre */}
       <Tab.Screen
         name="Home"
-        component={PatientHomeScreen}
+        component={ProfileStack}
         options={{ title: 'Início' }}
       />
 

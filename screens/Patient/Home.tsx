@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback
+} from 'react';
 import {
   View,
   Text,
@@ -12,40 +17,56 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { Colors, Button } from 'react-native-ui-lib';
-import { listProfessionals } from '../api/professional';
-import { ProfessionalProfile, ProfessionalFilter } from '../types/professional';
-import { ProfessionalCard } from '../components/ProfessionalCard';
-import { AppSelect, Option } from '../components/ui/AppSelect';
+import { listProfessionals } from '@/api/professional';
+import {
+  ProfessionalFilter,
+  ProfessionalProfile
+} from '@/types/professional';
+import { ProfessionalCard } from '@/components/ProfessionalCard';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '@/navigation/ProfileStack';
 
-const CATEGORY_OPTIONS: Option[] = [
+type Props = NativeStackScreenProps<ProfileStackParamList, 'Home'>;
+
+const CATEGORY_OPTIONS: { label: string; value: string }[] = [
   { label: 'Todas', value: '' },
   { label: 'Médico', value: 'doctor' },
   { label: 'Nutricionista', value: 'nutritionist' },
   { label: 'Psicólogo', value: 'psychologist' },
-  { label: 'Psiquiatra', value: 'physician' },
+  { label: 'Fisioterapeuta', value: 'physiotherapist' },
   { label: 'Personal Trainer', value: 'personal_trainer' },
 ];
 
 const PAGE_SIZE = 10;
+const CARD_MAX_WIDTH = 400;
 
-const PatientHomeScreen: React.FC = () => {
+const PatientHomeScreen: React.FC<Props> = ({ navigation }) => {
   const { width } = useWindowDimensions();
-  const PADDING = width * 0.04; // 4% de padding lateral
+  const PADDING = width * 0.04;
   const INPUT_HEIGHT = 40;
 
-  // dados
+  // calcula quantas colunas cabem
+  const columns = useMemo(() => {
+    const available = width - PADDING * 2;
+    return Math.max(1, Math.floor(available / (CARD_MAX_WIDTH + PADDING)));
+  }, [width]);
+
+  // Em 1 coluna, cardWidth = min(availableWidth, CARD_MAX_WIDTH)
+  const singleCardWidth = useMemo(() => {
+    const available = width - PADDING * 2;
+    return Math.min(available, CARD_MAX_WIDTH);
+  }, [width]);
+
   const [fullList, setFullList] = useState<ProfessionalProfile[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // filtros
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [onlyOnline, setOnlyOnline] = useState(false);
   const [onlyPresential, setOnlyPresential] = useState(false);
 
-  // paginação
   const [page, setPage] = useState(1);
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil(fullList.length / PAGE_SIZE)),
@@ -56,7 +77,6 @@ const PatientHomeScreen: React.FC = () => {
     return fullList.slice(start, start + PAGE_SIZE);
   }, [fullList, page]);
 
-  // busca
   const fetchProfessionals = useCallback(async (filters: ProfessionalFilter) => {
     setLoading(true);
     setError(null);
@@ -85,45 +105,58 @@ const PatientHomeScreen: React.FC = () => {
     applyFilters();
   }, []);
 
+  if (loading && page === 1) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe}>
+      {/* ===== filtros ===== */}
       <View style={[styles.filterPanel, { padding: PADDING }]}>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipScroll}
+        >
           {CATEGORY_OPTIONS.map(opt => (
             <TouchableOpacity
               key={opt.value}
-              style={[styles.chip, category === opt.value && styles.chipActive, { height: INPUT_HEIGHT, marginRight: PADDING * 0.5 }]}
+              style={[
+                styles.chip,
+                category === opt.value && styles.chipActive,
+                { height: INPUT_HEIGHT, marginRight: PADDING * 0.5 }
+              ]}
               onPress={() => {
-                const newCategory = opt.value;
-                setCategory(newCategory);
+                const newCat = opt.value;
+                setCategory(newCat);
                 setPage(1);
                 fetchProfessionals({
                   name: search,
-                  category: newCategory,
+                  category: newCat,
                   tags: tags.split(',').map(t => t.trim()).filter(Boolean).join(','),
-                  ...(onlyOnline ? { only_online: true } : {}),
-                  ...(onlyPresential ? { only_presential: true } : {}),
+                  only_online: onlyOnline,
+                  only_presential: onlyPresential,
                 });
               }}
             >
-              <Text style={[styles.chipText, category === opt.value && styles.chipTextActive]}>
+              <Text style={[
+                styles.chipText,
+                category === opt.value && styles.chipTextActive
+              ]}>
                 {opt.label}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
-
-
         <View style={styles.row}>
           <TextInput
             style={[
               styles.input,
-              {
-                flex: 1,
-                height: INPUT_HEIGHT,
-                marginRight: PADDING * 0.5,
-              },
+              { flex: 1, height: INPUT_HEIGHT, marginRight: PADDING * 0.5 }
             ]}
             placeholder="Buscar por nome..."
             value={search}
@@ -138,16 +171,11 @@ const PatientHomeScreen: React.FC = () => {
             style={{ height: INPUT_HEIGHT }}
           />
         </View>
-
         <View style={styles.row}>
           <TextInput
             style={[
               styles.input,
-              {
-                flex: 1,
-                height: INPUT_HEIGHT,
-                marginRight: PADDING * 0.5,
-              },
+              { flex: 1, height: INPUT_HEIGHT, marginRight: PADDING * 0.5 }
             ]}
             placeholder="Tags (vírgula)"
             value={tags}
@@ -159,16 +187,14 @@ const PatientHomeScreen: React.FC = () => {
               style={[
                 styles.toggleChip,
                 onlyOnline && styles.toggleChipActive,
-                { height: INPUT_HEIGHT },
+                { height: INPUT_HEIGHT }
               ]}
               onPress={() => setOnlyOnline(v => !v)}
             >
-              <Text
-                style={[
-                  styles.toggleText,
-                  onlyOnline && styles.toggleTextActive,
-                ]}
-              >
+              <Text style={[
+                styles.toggleText,
+                onlyOnline && styles.toggleTextActive
+              ]}>
                 Online
               </Text>
             </TouchableOpacity>
@@ -176,16 +202,14 @@ const PatientHomeScreen: React.FC = () => {
               style={[
                 styles.toggleChip,
                 onlyPresential && styles.toggleChipActive,
-                { height: INPUT_HEIGHT, marginLeft: PADDING * 0.5 },
+                { height: INPUT_HEIGHT, marginLeft: PADDING * 0.5 }
               ]}
               onPress={() => setOnlyPresential(v => !v)}
             >
-              <Text
-                style={[
-                  styles.toggleText,
-                  onlyPresential && styles.toggleTextActive,
-                ]}
-              >
+              <Text style={[
+                styles.toggleText,
+                onlyPresential && styles.toggleTextActive
+              ]}>
                 Presencial
               </Text>
             </TouchableOpacity>
@@ -193,21 +217,40 @@ const PatientHomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {loading && page === 1 ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : error ? (
+      {/* ===== lista responsiva ===== */}
+      {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : (
         <FlatList
-          contentContainerStyle={{ paddingHorizontal: PADDING }}
           data={paginated}
           keyExtractor={i => i.id}
-          renderItem={({ item }) => <ProfessionalCard profile={item} />}
+          numColumns={columns}
+          columnWrapperStyle={columns > 1 && { justifyContent: 'space-between', paddingHorizontal: PADDING }}
+          contentContainerStyle={[
+            { paddingTop: 12, paddingBottom: 24 },
+            columns === 1 ? { alignItems: 'center' } : undefined
+          ]}
+          renderItem={({ item }) => (
+            <View style={[
+              columns === 1
+                ? { width: singleCardWidth }
+                : { flex: 1, maxWidth: CARD_MAX_WIDTH }
+            ]}>
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('ProfessionalDetail', { profileId: item.id })
+                }
+              >
+                <ProfessionalCard profile={item} />
+              </TouchableOpacity>
+            </View>
+          )}
           refreshing={loading}
           onRefresh={applyFilters}
         />
       )}
 
+      {/* ===== paginação ===== */}
       {!loading && !error && (
         <View style={[styles.pagination, { paddingHorizontal: PADDING }]}>
           <TouchableOpacity
@@ -235,45 +278,28 @@ const PatientHomeScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#F5F5F5' },
-  filterPanel: {
-    backgroundColor: '#FFF',
-    elevation: 2,
-  },
-  chipScroll: {
-    paddingVertical: 8,
-  },
+  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  filterPanel: { backgroundColor: '#FFF', elevation: 2 },
+  chipScroll: { paddingVertical: 8 },
   chip: {
     paddingHorizontal: 12,
     borderRadius: 16,
     backgroundColor: '#ECECEC',
     justifyContent: 'center',
   },
-  chipActive: {
-    backgroundColor: Colors.blue30,
-  },
-  chipText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  chipTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
+  chipActive: { backgroundColor: Colors.blue30 },
+  chipText: { fontSize: 14, color: '#555' },
+  chipTextActive: { color: '#FFF', fontWeight: '600' },
+  row: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   input: {
+    flex: 1,
     borderRadius: 4,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#DDD',
     paddingHorizontal: 12,
     backgroundColor: '#FAFAFA',
   },
-  toggleGroup: {
-    flexDirection: 'row',
-  },
+  toggleGroup: { flexDirection: 'row' },
   toggleChip: {
     paddingHorizontal: 10,
     borderRadius: 16,
@@ -281,21 +307,13 @@ const styles = StyleSheet.create({
     borderColor: '#DDD',
     justifyContent: 'center',
   },
-  toggleChipActive: {
-    backgroundColor: Colors.green30,
-    borderColor: Colors.green30,
-  },
-  toggleText: {
-    fontSize: 14,
-    color: '#555',
-  },
-  toggleTextActive: {
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  loader: {
+  toggleChipActive: { backgroundColor: Colors.green30, borderColor: Colors.green30 },
+  toggleText: { fontSize: 14, color: '#555' },
+  toggleTextActive: { color: '#FFF', fontWeight: '600' },
+  cardWrapper: {
     flex: 1,
-    justifyContent: 'center',
+    maxWidth: CARD_MAX_WIDTH,
+    marginBottom: 16,
   },
   errorText: {
     textAlign: 'center',
@@ -315,17 +333,9 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.blue30,
   },
-  pageButtonDisabled: {
-    backgroundColor: Colors.grey40,
-  },
-  pageButtonText: {
-    color: '#FFF',
-    fontSize: 14,
-  },
-  pageInfo: {
-    fontSize: 14,
-    color: '#333',
-  },
+  pageButtonDisabled: { backgroundColor: Colors.grey40 },
+  pageButtonText: { color: '#FFF', fontSize: 14 },
+  pageInfo: { fontSize: 14, color: '#333' },
 });
 
 export default PatientHomeScreen;

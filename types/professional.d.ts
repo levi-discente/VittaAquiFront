@@ -2,21 +2,32 @@ export interface ProfessionalProfile {
   id: string;
   userId: string;
   userName: string;
-  category: string;
+  email: string;
+  phone: string;
+  cep: string;
+  uf: string;
+  city: string;
+  address: string;
   bio: string;
-  services?: string[];
-  price?: number;
-  tags?: string[];
-  online?: boolean;
-  presencial?: boolean;
+  category: string;
+  profissionalIdentification: string;
+  services: string[];
+  price: number;
+  tags: string[];
+  onlyOnline: boolean;
+  onlyPresential: boolean;
+  rating: number;
+  numReviews: number;
+  imageUrl?: string;
 }
+
 
 export interface ProfessionalFilter {
   category?: string;
-  userName?: string;
-  tags?: string[];
-  online?: boolean;
-  presencial?: boolean;
+  name?: string;
+  tags?: string;
+  only_online?: boolean;
+  only_presential?: boolean;
 }
 
 

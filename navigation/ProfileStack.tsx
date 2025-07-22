@@ -1,20 +1,30 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import ProfileScreen from '@/screens/Profile/ProfileScreen';
-import EditProfileScreen from '@/screens/Profile/EditProfileScreen';
 
-type ProfileStackParamList = {
-  Profile: undefined;
-  EditProfile: undefined;
+import PatientHomeScreen from '@/screens/Patient/Home';
+import ProfessionalDetailScreen from '@/screens/Patient/ProfessionalDetailScreen';
+
+export type ProfileStackParamList = {
+  PatientHome: undefined;
+  ProfessionalDetail: { profileId: string };
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
 
-const ProfileStack = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
-    <Stack.Screen name="Profile" component={ProfileScreen} />
-    <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+const ProfileStack: React.FC = () => (
+  <Stack.Navigator screenOptions={{ headerShown: true }}>
+    <Stack.Screen
+      name="PatientHome"
+      component={PatientHomeScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen
+      name="ProfessionalDetail"
+      component={ProfessionalDetailScreen}
+      options={{ title: "Detalhes", headerShown: true }}
+    />
   </Stack.Navigator>
 );
 
 export default ProfileStack;
+

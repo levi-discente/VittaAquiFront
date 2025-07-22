@@ -33,7 +33,7 @@ const categories: Option[] = [
   { label: 'Médico', value: 'doctor' },
   { label: 'Nutricionista', value: 'nutritionist' },
   { label: 'Psicólogo', value: 'psychologist' },
-  { label: 'Psiquiatra', value: 'physician' },
+  { label: 'Psiquiatra', value: 'physiotherapist' },
   { label: 'Personal Trainer', value: 'personal_trainer' },
 ];
 
