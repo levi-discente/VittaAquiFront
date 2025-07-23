@@ -53,13 +53,17 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [loadingOp, setLoadingOp] = useState(false);
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
 
+
   useEffect(() => {
-    const ranges = (existingAppointments || []).map(a => ({
-      start: new Date(a.start),
-      end: new Date(a.end),
-    }));
+    const ranges = (existingAppointments || [])
+      .filter(a => a.status !== 'cancelled')
+      .map(a => ({
+        start: new Date(a.start_time),
+        end: new Date(a.end_time),
+      }));
     setBusyRanges(ranges);
   }, [existingAppointments]);
+
 
   useEffect(() => {
     if (visible && appointmentToEdit) {
@@ -132,25 +136,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
       onClose();
     } catch (err: any) {
       setSnackbar({ visible: true, message: err.message || 'Erro na operação' });
-    } finally {
-      setLoadingOp(false);
-    }
-  };
-
-  const handleCancelAppointment = async () => {
-    if (!appointmentToEdit) return;
-    setLoadingOp(true);
-    try {
-      await updateAppointment(appointmentToEdit.id, {
-        start_time: appointmentToEdit.start_time,
-        end_time: appointmentToEdit.end_time,
-        status: 'cancelled'
-      });
-      setSnackbar({ visible: true, message: 'Agendamento cancelado!' });
-      onDone();
-      onClose();
-    } catch (err: any) {
-      setSnackbar({ visible: true, message: err.message || 'Erro ao cancelar' });
     } finally {
       setLoadingOp(false);
     }
