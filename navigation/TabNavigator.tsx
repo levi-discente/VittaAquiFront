@@ -2,53 +2,45 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-import { usePermissions } from '@/context/PermissionContext';
-import ProfileStack from './ProfileStack';
-import { MyAppointmentsScreen } from '@/screens/Common/MyAppointmentsScreen';
+import ProfileStack, { ProfileStackParamList } from './ProfileStack';
 
 export type TabParamList = {
-  Home: undefined;
-  Agenda: undefined;
+  HomeTab: { initialScreen?: keyof ProfileStackParamList };
+  AppointmentsTab: { initialScreen?: keyof ProfileStackParamList };
 };
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const TabNavigator: React.FC = () => {
-  const { canViewPatientHome, canViewProfessionalAgenda } = usePermissions();
+const TabNavigator: React.FC = () => (
+  <Tab.Navigator
+    screenOptions={({ route }) => ({
+      headerShown: false,
+      tabBarIcon: ({ color, size }) => {
+        const icons: Record<string, string> = {
+          HomeTab: 'home-outline',
+          AppointmentsTab: 'calendar-outline',
+        };
+        return <Ionicons name={icons[route.name]} size={size} color={color} />;
+      },
+      tabBarActiveTintColor: '#007AFF',
+      tabBarInactiveTintColor: 'gray',
+    })}
+  >
+    <Tab.Screen
+      name="HomeTab"
+      component={ProfileStack}
+      options={{ title: 'Início' }}
+      initialParams={{ initialScreen: 'Home' }}
+    />
 
-  return (
-
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => {
-          const icons: Record<string, string> = {
-            Home: 'home-outline',
-            Agenda: 'calendar-outline',
-          };
-          return <Ionicons name={icons[route.name]} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
-      {/* Home fica sempre */}
-      <Tab.Screen
-        name="Home"
-        component={ProfileStack}
-        options={{ title: 'Início' }}
-      />
-
-      {/* Agenda só para quem tem permissão */}
-      <Tab.Screen
-        name="Agenda"
-        component={MyAppointmentsScreen}
-        options={{ title: 'Agenda' }}
-      />
-    </Tab.Navigator>
-
-  );
-};
+    <Tab.Screen
+      name="AppointmentsTab"
+      component={ProfileStack}
+      options={{ title: 'Agenda' }}
+      initialParams={{ initialScreen: 'Appointments' }}
+    />
+  </Tab.Navigator>
+);
 
 export default TabNavigator;
 

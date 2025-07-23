@@ -2,25 +2,22 @@ import React, { useEffect, useState, useMemo } from 'react';
 import {
   SafeAreaView,
   View,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   Dimensions,
+  StyleSheet,
 } from 'react-native';
 import { Text, Colors } from 'react-native-ui-lib';
 import { Calendar, DateData, MarkedDates } from 'react-native-calendars';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { ProfileStackParamList } from '@/navigation/ProfileStack';
 import { useMyAppointments } from '@/hooks/useAppointments';
 import { Appointment } from '@/types/appointment';
 import { AppointmentCard } from '@/components/AppointmentCard';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp, NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ProfileStackParamList } from '@/navigation/ProfileStack';
 
-const { width } = Dimensions.get('window');
 const CALENDAR_HEIGHT = 350;
-const CARD_WIDTH = width * 0.9;
 
-type Props = NativeStackScreenProps<ProfileStackParamList, 'MyAppointments'>;
+type Props = NativeStackScreenProps<ProfileStackParamList, 'Appointments'>;
 
 function pad(n: number) {
   return String(n).padStart(2, '0');
@@ -30,19 +27,20 @@ function formatLocalDateString(dateString: string) {
   const [y, m, d] = dateString.split('-').map(Number);
   const dt = new Date(y, m - 1, d);
   return dt.toLocaleDateString('pt-BR', {
-    weekday: 'long', day: '2-digit', month: 'long',
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
   });
 }
 
-export const MyAppointmentsScreen: React.FC<Props> = () => {
-  const navigation = useNavigation<NativeStackNavigationProp<ProfileStackParamList>>();
-
+export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
   const { appointments, loading, error, refresh } = useMyAppointments();
-  // garante lista não nula
   const safeAppointments = appointments ?? [];
 
   const today = new Date();
-  const initialDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  const initialDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(
+    today.getDate()
+  )}`;
 
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
 
@@ -69,11 +67,6 @@ export const MyAppointmentsScreen: React.FC<Props> = () => {
     );
   }, [safeAppointments, selectedDate]);
 
-  useEffect(() => {
-    // @ts-ignore legacy header setup
-    MyAppointmentsScreen.navigationOptions = { title: 'Meus Agendamentos' };
-  }, []);
-
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -94,15 +87,11 @@ export const MyAppointmentsScreen: React.FC<Props> = () => {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <Text style={styles.screenTitle}>Meus Agendamentos</Text>
-
       <Calendar
         style={styles.calendar}
         markingType="multi-dot"
         markedDates={markedDates}
-        onDayPress={(day: DateData) => {
-          setSelectedDate(day.dateString);
-        }}
+        onDayPress={(day: DateData) => setSelectedDate(day.dateString)}
         theme={{
           todayTextColor: Colors.blue30,
           arrowColor: Colors.blue30,
@@ -124,7 +113,7 @@ export const MyAppointmentsScreen: React.FC<Props> = () => {
       ) : (
         <FlatList
           data={todays}
-          keyExtractor={item => item.id}
+          keyExtractor={item => String(item.id)}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
             <AppointmentCard
@@ -147,6 +136,8 @@ export const MyAppointmentsScreen: React.FC<Props> = () => {
     </SafeAreaView>
   );
 };
+
+export default AppointmentsScreen;
 
 const styles = StyleSheet.create({
   safe: {

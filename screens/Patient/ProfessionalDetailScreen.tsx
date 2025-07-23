@@ -300,7 +300,7 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             )}
             style={styles.actionBtn}
             onPress={() => {
-              /* navegar para chat */
+              /* TODO: navegar para chat */
             }}
           />
           <Button
@@ -324,9 +324,9 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 end_time: endISO,
               });
               setBookingVisible(false);
-              navigation.navigate('MyAppointments');
+              navigation.navigate('Appointments');
             } catch {
-              // tratar erro
+              /* TODO: por SnackBar */
             }
           }}
           workingDays={profile.availableDaysOfWeek}
