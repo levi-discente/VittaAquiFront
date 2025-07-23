@@ -3,7 +3,9 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  Dimensions
+  Dimensions,
+  Alert,
+  Platform
 } from 'react-native';
 import { Card, Text, Colors, Button } from 'react-native-ui-lib';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -24,6 +26,11 @@ const STATUS_COLORS: Record<string, string> = {
   confirmed: Colors.green30,
   cancelled: Colors.red30,
 };
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'PENDENTE',
+  confirmed: 'CONFIRMADO',
+  cancelled: 'CANCELADO',
+};
 
 export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
@@ -37,23 +44,41 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const badgeColor = STATUS_COLORS[status] ?? Colors.grey40;
 
+  const handleCancelPress = () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Tem certeza que deseja cancelar este agendamento?');
+      if (confirmed) {
+        onCancel();
+      }
+    } else {
+      Alert.alert(
+        'Cancelar agendamento',
+        'Tem certeza que deseja cancelar este agendamento?',
+        [
+          { text: 'Não', style: 'cancel' },
+          { text: 'Sim', style: 'destructive', onPress: onCancel },
+        ]
+      );
+    }
+  };
+
+  const isCancelled = status === 'cancelled';
+
   return (
-    <TouchableOpacity onPress={onPress}>
-      <Card style={[styles.card, { width: CARD_WIDTH }]}>
-        {/* Status Badge */}
-        <View style={[styles.badge, { backgroundColor: badgeColor }]}>
-          <Text style={styles.badgeText}>{status.toUpperCase()}</Text>
+    <Card style={[styles.card, { width: CARD_WIDTH }]}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+        {/* Cabeçalho e Info */}
+        <View style={isCancelled ? { marginBottom: 12 } : { marginBottom: 0 }} >
+          <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+            <Text style={styles.badgeText}>{STATUS_LABELS[status] ?? status.toUpperCase()}</Text>
+          </View>
+          <Text style={styles.name}>{professional_name}</Text>
+          <Text style={styles.info}>{dateStr} • {timeStr}</Text>
         </View>
+      </TouchableOpacity>
 
-        {/* Profissional */}
-        <Text style={styles.name}>{professional_name}</Text>
-
-        {/* Data e hora */}
-        <Text style={styles.info}>
-          {dateStr} • {timeStr}
-        </Text>
-
-        {/* Ações */}
+      {/* Ações */}
+      {!isCancelled && (
         <View style={styles.actions}>
           <Button
             link
@@ -67,7 +92,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
           />
           <Button
             link
-            onPress={onCancel}
+            onPress={handleCancelPress}
             iconSource={() => (
               <Ionicons name="close-outline" size={16} color={Colors.red30} />
             )}
@@ -76,8 +101,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             labelStyle={[styles.actionLabel, { color: Colors.red30 }]}
           />
         </View>
-      </Card>
-    </TouchableOpacity>
+      )}
+    </Card>
   );
 };
 
@@ -125,3 +150,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+

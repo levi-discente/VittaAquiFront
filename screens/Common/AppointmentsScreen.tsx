@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import { Text, Colors } from 'react-native-ui-lib';
 import { Calendar, DateData, MarkedDates } from 'react-native-calendars';
@@ -15,12 +16,31 @@ import { useMyAppointments } from '@/hooks/useAppointments';
 import { Appointment } from '@/types/appointment';
 import { AppointmentCard } from '@/components/AppointmentCard';
 import { useFocusEffect } from '@react-navigation/native';
+import { updateAppointment } from '@/api/appointment';
+import { AppointmentModal } from '@/components/AppointmentModal';
 
 const CALENDAR_HEIGHT = 350;
-const PAGE_SIZE = 10;
 const CARD_MAX_WIDTH = 400;
 
+import { LocaleConfig } from 'react-native-calendars';
 
+LocaleConfig.locales['pt'] = {
+  monthNames: [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ],
+  monthNamesShort: [
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+  ],
+  dayNames: [
+    'Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira',
+    'Quinta-feira', 'Sexta-feira', 'Sábado'
+  ],
+  dayNamesShort: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'],
+  today: 'Hoje',
+};
+LocaleConfig.defaultLocale = 'pt';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Appointments'>;
 
@@ -39,9 +59,8 @@ function formatLocalDateString(dateString: string) {
 }
 
 export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
-
   const { width } = useWindowDimensions();
-  const PADDING = width * 0.04
+  const PADDING = width * 0.04;
   const columns = useMemo(() => {
     const avail = width - PADDING * 2;
     return Math.max(1, Math.floor(avail / (CARD_MAX_WIDTH + PADDING)));
@@ -49,12 +68,10 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
 
   const { appointments, loading, error, refresh } = useMyAppointments();
   const safeAppointments = appointments ?? [];
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
 
   const today = new Date();
-  const initialDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(
-    today.getDate()
-  )}`;
-
+  const initialDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   const [selectedDate, setSelectedDate] = useState<string>(initialDate);
 
   const markedDates = useMemo<MarkedDates>(() => {
@@ -73,16 +90,29 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
     };
     return m;
   }, [safeAppointments, selectedDate]);
+
   useFocusEffect(
     useCallback(() => {
       refresh();
     }, [refresh])
   );
+
   const todays = useMemo<Appointment[]>(() => {
-    return safeAppointments.filter(
-      ap => ap.start_time.slice(0, 10) === selectedDate
-    );
+    return safeAppointments.filter(ap => ap.start_time.slice(0, 10) === selectedDate);
   }, [safeAppointments, selectedDate]);
+
+  const handleCancel = async (appointment: Appointment) => {
+    try {
+      await updateAppointment(appointment.id, {
+        start_time: appointment.start_time,
+        end_time: appointment.end_time,
+        status: 'cancelled',
+      });
+      refresh();
+    } catch (err: any) {
+      Alert.alert('Erro', err.message || 'Erro ao cancelar agendamento');
+    }
+  };
 
   if (loading) {
     return (
@@ -91,6 +121,7 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
       </View>
     );
   }
+
   if (error) {
     return (
       <View style={styles.centered}>
@@ -134,13 +165,21 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
           numColumns={columns}
           columnWrapperStyle={
             columns > 1
-              ? { justifyContent: 'space-around', paddingHorizontal: PADDING }
+              ? {
+                flex: 1,
+                flexWrap: 'wrap',
+                justifyContent: 'space-between',
+                paddingHorizontal: PADDING,
+                gap: 16,
+              }
               : undefined
           }
-          contentContainerStyle={[
-            { paddingTop: 12, paddingBottom: 24 },
-            columns === 1 ? { alignItems: 'center' } : undefined
-          ]}
+          contentContainerStyle={{
+            paddingHorizontal: PADDING,
+            paddingTop: 12,
+            paddingBottom: 24,
+            alignItems: columns === 1 ? 'center' : 'stretch',
+          }}
           renderItem={({ item }) => (
             <AppointmentCard
               appointment={item}
@@ -150,15 +189,27 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
                 })
               }
               onEdit={() => {
-                /* TODO: abrir modal de edição de data */
+                if (item.status !== 'cancelled') {
+                  setEditingAppointment(item);
+                }
               }}
-              onCancel={() => {
-                /* TODO: chamar API de cancelar */
-              }}
+              onCancel={() => handleCancel(item)}
             />
           )}
         />
+
       )}
+
+      <AppointmentModal
+        visible={!!editingAppointment}
+        onClose={() => setEditingAppointment(null)}
+        onDone={() => {
+          setEditingAppointment(null);
+          refresh();
+        }}
+        professionalId={editingAppointment?.professional_id ?? 0}
+        appointmentToEdit={editingAppointment ?? undefined}
+      />
     </SafeAreaView>
   );
 };
@@ -169,11 +220,6 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: '#F5F5F5',
-  },
-  screenTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-    margin: 16,
   },
   calendar: {
     width: '100%',
@@ -192,13 +238,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
   },
-  list: {
-    padding: 16,
-  },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
 });
-

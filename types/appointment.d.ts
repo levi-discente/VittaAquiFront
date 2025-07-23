@@ -18,7 +18,7 @@ export interface CreateAppointmentData {
 }
 
 export interface UpdateAppointmentData {
-  startTime: string;
-  endTime: string;
+  start_time: string;
+  end_time: string;
   status: string;
 }

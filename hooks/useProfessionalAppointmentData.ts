@@ -17,10 +17,12 @@ export function useProfessionalAppointmentData(professionalId: number, trigger: 
       const appointments = await getProfessionalSchedule(professionalId);
       setWorkingDays(profile.availableDaysOfWeek);
       setWorkingHours({ start: profile.startHour, end: profile.endHour });
-      setExistingAppointments(appointments.map((a: any) => ({
-        start: a.start_time,
-        end: a.end_time,
-      })));
+      setExistingAppointments(
+        (appointments ?? []).map((a: any) => ({
+          start: a.start_time,
+          end: a.end_time,
+        }))
+      );
       setError(null);
     } catch (err: any) {
       setError(err.message ?? 'Erro ao carregar dados');
@@ -31,7 +33,7 @@ export function useProfessionalAppointmentData(professionalId: number, trigger: 
 
   useEffect(() => {
     fetchData();
-  }, [fetchData, trigger]); // <- a mágica aqui: novo trigger
+  }, [fetchData, trigger]);
 
   return { loading, error, workingDays, workingHours, existingAppointments, refetch: fetchData };
 }

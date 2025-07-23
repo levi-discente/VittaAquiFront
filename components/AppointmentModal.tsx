@@ -13,6 +13,7 @@ import { updateAppointment, createAppointment } from '@/api/appointment';
 import { Appointment } from '@/types/appointment';
 import { Snackbar } from './Snackbar';
 import { useProfessionalAppointmentData } from '@/hooks/useProfessionalAppointmentData';
+import { Ionicons } from '@expo/vector-icons';
 
 export type AppointmentModalProps = {
   visible: boolean;
@@ -53,7 +54,7 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
 
   useEffect(() => {
-    const ranges = existingAppointments.map(a => ({
+    const ranges = (existingAppointments || []).map(a => ({
       start: new Date(a.start),
       end: new Date(a.end),
     }));
@@ -83,13 +84,13 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   }, [daysAhead]);
 
   const computeSlots = useCallback((date: Date): Slot[] => {
-    const slots: Slot[] = [];
-    const [sh, sm] = workingHours.start.split(':').map(Number);
-    const [eh, em] = workingHours.end.split(':').map(Number);
+    const [sh, sm] = (workingHours.start || '08:00').split(':').map(Number);
+    const [eh, em] = (workingHours.end || '18:00').split(':').map(Number);
     const start = new Date(date); start.setHours(sh, sm, 0, 0);
     const end = new Date(date); end.setHours(eh, em, 0, 0);
     let cursor = new Date(start);
     const now = new Date();
+    const slots: Slot[] = [];
     while (cursor < end) {
       const conflict = busyRanges.some(r => cursor >= r.start && cursor < r.end);
       const isPast = date.toDateString() === now.toDateString() && cursor < now;
@@ -114,8 +115,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     try {
       if (appointmentToEdit) {
         await updateAppointment(appointmentToEdit.id, {
-          startTime: stISO,
-          endTime: enISO,
+          start_time: stISO,
+          end_time: enISO,
           status: appointmentToEdit.status
         });
         setSnackbar({ visible: true, message: 'Agendamento atualizado!' });
@@ -141,8 +142,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     setLoadingOp(true);
     try {
       await updateAppointment(appointmentToEdit.id, {
-        startTime: appointmentToEdit.start_time,
-        endTime: appointmentToEdit.end_time,
+        start_time: appointmentToEdit.start_time,
+        end_time: appointmentToEdit.end_time,
         status: 'cancelled'
       });
       setSnackbar({ visible: true, message: 'Agendamento cancelado!' });
@@ -157,15 +158,14 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} onPress={() => { }} style={styles.container}>
           {loading ? (
             <ActivityIndicator size="large" color={Colors.blue30} />
           ) : error ? (
             <Text text70 red30>{error}</Text>
           ) : (
             <>
-              {/* dias */}
               <FlatList
                 horizontal
                 data={days}
@@ -195,7 +195,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 }}
               />
 
-              {/* horários */}
               {selectedDate ? (
                 <FlatList
                   data={slots}
@@ -205,22 +204,31 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                   renderItem={({ item }) => {
                     const lbl = item.time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
                     const isSel = selectedTime?.getTime() === item.time.getTime();
+                    const isOld = appointmentToEdit && item.time.getTime() === new Date(appointmentToEdit.start_time).getTime();
                     return (
                       <TouchableOpacity
                         disabled={!item.available}
                         onPress={() => setSelectedTime(item.time)}
                         style={[
                           styles.slotBtn,
-                          item.available
-                            ? (isSel ? styles.slotSelected : styles.slotEnabled)
-                            : styles.slotUnavailable,
+                          isOld ? styles.slotOld :
+                            item.available
+                              ? (isSel ? styles.slotSelected : styles.slotEnabled)
+                              : styles.slotUnavailable,
                         ]}
                       >
-                        <Text style={
-                          item.available
-                            ? (isSel ? styles.slotTextSelected : styles.slotText)
-                            : styles.slotTextUnavailable
-                        }>{lbl}</Text>
+                        <View style={styles.slotContent}>
+                          <Text style={
+                            isOld ? styles.slotTextOld :
+                              item.available
+                                ? (isSel ? styles.slotTextSelected : styles.slotText)
+                                : styles.slotTextUnavailable
+                          }>
+                            {lbl}
+                          </Text>
+                          {isOld && <Ionicons name="calendar-outline" size={16} color={Colors.blue30} style={styles.slotIcon} />}
+                          {isSel && !isOld && <Ionicons name="checkmark-circle" size={16} color={Colors.green30} style={styles.slotIcon} />}
+                        </View>
                       </TouchableOpacity>
                     );
                   }}
@@ -231,12 +239,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
                 </View>
               )}
 
-              {/* ações */}
               <View style={styles.footer}>
                 <Button label="Fechar" link onPress={onClose} style={styles.footerBtn} />
-                {appointmentToEdit && (
-                  <Button label="Cancelar Consulta" link onPress={handleCancelAppointment} style={styles.footerBtn} />
-                )}
                 <Button
                   label={appointmentToEdit ? "Salvar" : "Confirmar"}
                   disabled={!selectedTime || loadingOp}
@@ -252,8 +256,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             message={snackbar.message}
             onDismiss={() => setSnackbar(s => ({ ...s, visible: false }))}
           />
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
@@ -282,15 +286,20 @@ const styles = StyleSheet.create({
   slotBtn: { flex: 1, margin: 4, paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
   slotEnabled: { backgroundColor: Colors.blue60 },
   slotSelected: { backgroundColor: Colors.green30 },
+  slotOld: { backgroundColor: Colors.blue70 },
   slotUnavailable: { backgroundColor: Colors.grey40 },
+
   slotText: { color: '#fff' },
   slotTextSelected: { color: '#fff', fontWeight: '600' },
   slotTextUnavailable: { color: '#666' },
+  slotTextOld: { color: '#fff', fontWeight: 'bold' },
+
+  slotContent: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  slotIcon: { marginLeft: 4 },
 
   placeholder: { paddingVertical: 32, justifyContent: 'center' },
 
-  footer: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24 },
-  footerBtn: { marginLeft: 8 },
+  footer: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24, flexWrap: 'wrap' },
+  footerBtn: { marginLeft: 8, marginTop: 8 },
   disabledBtn: { backgroundColor: Colors.grey40 },
 });
-
