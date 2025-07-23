@@ -13,7 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import { Colors, Button } from 'react-native-ui-lib';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { listProfessionals } from '@/api/professional';
 import { ProfessionalFilter, ProfessionalProfile } from '@/types/professional';
 import { ProfessionalCard } from '@/components/ProfessionalCard';

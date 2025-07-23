@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   SafeAreaView,
   View,
   FlatList,
   ActivityIndicator,
-  Dimensions,
   StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import { Text, Colors } from 'react-native-ui-lib';
 import { Calendar, DateData, MarkedDates } from 'react-native-calendars';
@@ -14,8 +14,13 @@ import { ProfileStackParamList } from '@/navigation/ProfileStack';
 import { useMyAppointments } from '@/hooks/useAppointments';
 import { Appointment } from '@/types/appointment';
 import { AppointmentCard } from '@/components/AppointmentCard';
+import { useFocusEffect } from '@react-navigation/native';
 
 const CALENDAR_HEIGHT = 350;
+const PAGE_SIZE = 10;
+const CARD_MAX_WIDTH = 400;
+
+
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Appointments'>;
 
@@ -34,6 +39,14 @@ function formatLocalDateString(dateString: string) {
 }
 
 export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
+
+  const { width } = useWindowDimensions();
+  const PADDING = width * 0.04
+  const columns = useMemo(() => {
+    const avail = width - PADDING * 2;
+    return Math.max(1, Math.floor(avail / (CARD_MAX_WIDTH + PADDING)));
+  }, [width]);
+
   const { appointments, loading, error, refresh } = useMyAppointments();
   const safeAppointments = appointments ?? [];
 
@@ -60,7 +73,11 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
     };
     return m;
   }, [safeAppointments, selectedDate]);
-
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
   const todays = useMemo<Appointment[]>(() => {
     return safeAppointments.filter(
       ap => ap.start_time.slice(0, 10) === selectedDate
@@ -114,7 +131,16 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
         <FlatList
           data={todays}
           keyExtractor={item => String(item.id)}
-          contentContainerStyle={styles.list}
+          numColumns={columns}
+          columnWrapperStyle={
+            columns > 1
+              ? { justifyContent: 'space-around', paddingHorizontal: PADDING }
+              : undefined
+          }
+          contentContainerStyle={[
+            { paddingTop: 12, paddingBottom: 24 },
+            columns === 1 ? { alignItems: 'center' } : undefined
+          ]}
           renderItem={({ item }) => (
             <AppointmentCard
               appointment={item}

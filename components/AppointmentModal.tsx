@@ -6,42 +6,71 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Text, Button, Colors } from 'react-native-ui-lib';
+import { updateAppointment, createAppointment } from '@/api/appointment';
+import { Appointment } from '@/types/appointment';
+import { Snackbar } from './Snackbar';
+import { useProfessionalAppointmentData } from '@/hooks/useProfessionalAppointmentData';
 
 export type AppointmentModalProps = {
   visible: boolean;
-  onCancel: () => void;
-  onConfirm: (startISO: string, endISO: string) => void;
-  workingDays: string[];
-  workingHours: { start: string; end: string };
-  existingAppointments?: { start: string; end: string }[];
+  onClose: () => void;
+  professionalId: number;
+  appointmentToEdit?: Appointment;
+  onDone: () => void;
   slotInterval?: number;
   daysAhead?: number;
   durationMinutes?: number;
 };
 
 const daysMap = [
-  'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+  'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 ];
-
 const { width } = Dimensions.get('window');
 const MODAL_WIDTH = Math.min(width * 0.9, 400);
 
 type Slot = { time: Date; available: boolean };
 
 export const AppointmentModal: React.FC<AppointmentModalProps> = ({
-  visible, onCancel, onConfirm,
-  workingDays, workingHours,
-  existingAppointments = [],
-  slotInterval = 60,
-  daysAhead = 14,
-  durationMinutes = 60,
+  visible, onClose, onDone,
+  professionalId, appointmentToEdit,
+  slotInterval = 60, daysAhead = 14, durationMinutes = 60,
 }) => {
+  const {
+    loading,
+    error,
+    workingDays,
+    workingHours,
+    existingAppointments,
+  } = useProfessionalAppointmentData(professionalId, visible);
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
+  const [busyRanges, setBusyRanges] = useState<{ start: Date; end: Date }[]>([]);
+  const [loadingOp, setLoadingOp] = useState(false);
+  const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
 
-  // next N days
+  useEffect(() => {
+    const ranges = existingAppointments.map(a => ({
+      start: new Date(a.start),
+      end: new Date(a.end),
+    }));
+    setBusyRanges(ranges);
+  }, [existingAppointments]);
+
+  useEffect(() => {
+    if (visible && appointmentToEdit) {
+      const start = new Date(appointmentToEdit.start_time);
+      setSelectedDate(start);
+      setSelectedTime(start);
+    } else if (visible) {
+      setSelectedDate(null);
+      setSelectedTime(null);
+    }
+  }, [visible, appointmentToEdit]);
+
   const days = useMemo(() => {
     const arr: Date[] = [];
     const today = new Date();
@@ -53,153 +82,176 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
     return arr;
   }, [daysAhead]);
 
-  const apptRanges = useMemo(() => {
-    return existingAppointments.map(a => ({
-      start: new Date(a.start),
-      end: new Date(a.end),
-    }));
-  }, [existingAppointments]);
-
   const computeSlots = useCallback((date: Date): Slot[] => {
     const slots: Slot[] = [];
     const [sh, sm] = workingHours.start.split(':').map(Number);
     const [eh, em] = workingHours.end.split(':').map(Number);
     const start = new Date(date); start.setHours(sh, sm, 0, 0);
     const end = new Date(date); end.setHours(eh, em, 0, 0);
-
     let cursor = new Date(start);
+    const now = new Date();
     while (cursor < end) {
-      const now = new Date();
-      const isPast = cursor < now && cursor.toDateString() === now.toDateString();
-      const conflict = apptRanges.some(r =>
-        cursor >= r.start && cursor < r.end
-      );
-      slots.push({
-        time: new Date(cursor),
-        available: !conflict && !isPast,
-      });
-      cursor = new Date(cursor.getTime() + slotInterval * 60_000);
+      const conflict = busyRanges.some(r => cursor >= r.start && cursor < r.end);
+      const isPast = date.toDateString() === now.toDateString() && cursor < now;
+      slots.push({ time: new Date(cursor), available: !conflict && !isPast });
+      cursor = new Date(cursor.getTime() + slotInterval * 60000);
     }
     return slots;
-  }, [workingHours, apptRanges, slotInterval]);
+  }, [workingHours, busyRanges, slotInterval]);
 
-  const dayHasFreeSlots = useCallback((day: Date) => {
-    if (!workingDays.includes(daysMap[day.getDay()])) return false;
-    return computeSlots(day).some(s => s.available);
+  const dayHasFreeSlots = useCallback((d: Date) => {
+    if (!workingDays.includes(daysMap[d.getDay()])) return false;
+    return computeSlots(d).some(s => s.available);
   }, [workingDays, computeSlots]);
 
-  const slots = useMemo<Slot[]>(() => {
-    return selectedDate ? computeSlots(selectedDate) : [];
-  }, [selectedDate, computeSlots]);
+  const slots = useMemo(() => selectedDate ? computeSlots(selectedDate) : [], [selectedDate, computeSlots]);
 
-  useEffect(() => {
-    if (visible) {
-      setSelectedDate(null);
-      setSelectedTime(null);
-    }
-  }, [visible]);
-
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!selectedTime) return;
-    const st = selectedTime;
-    const en = new Date(st.getTime() + durationMinutes * 60_000);
-    onConfirm(st.toISOString(), en.toISOString());
+    setLoadingOp(true);
+    const stISO = selectedTime.toISOString();
+    const enISO = new Date(selectedTime.getTime() + durationMinutes * 60000).toISOString();
+    try {
+      if (appointmentToEdit) {
+        await updateAppointment(appointmentToEdit.id, {
+          startTime: stISO,
+          endTime: enISO,
+          status: appointmentToEdit.status
+        });
+        setSnackbar({ visible: true, message: 'Agendamento atualizado!' });
+      } else {
+        await createAppointment({
+          professional_id: professionalId,
+          start_time: stISO,
+          end_time: enISO
+        });
+        setSnackbar({ visible: true, message: 'Agendamento criado!' });
+      }
+      onDone();
+      onClose();
+    } catch (err: any) {
+      setSnackbar({ visible: true, message: err.message || 'Erro na operação' });
+    } finally {
+      setLoadingOp(false);
+    }
+  };
+
+  const handleCancelAppointment = async () => {
+    if (!appointmentToEdit) return;
+    setLoadingOp(true);
+    try {
+      await updateAppointment(appointmentToEdit.id, {
+        startTime: appointmentToEdit.start_time,
+        endTime: appointmentToEdit.end_time,
+        status: 'cancelled'
+      });
+      setSnackbar({ visible: true, message: 'Agendamento cancelado!' });
+      onDone();
+      onClose();
+    } catch (err: any) {
+      setSnackbar({ visible: true, message: err.message || 'Erro ao cancelar' });
+    } finally {
+      setLoadingOp(false);
+    }
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onCancel}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.container}>
-          {/* Calendar */}
-          <FlatList
-            horizontal
-            data={days}
-            keyExtractor={d => d.toISOString()}
-            contentContainerStyle={styles.calendar}
-            renderItem={({ item }) => {
-              const dayName = item.toLocaleDateString('pt-BR', { weekday: 'short' });
-              const dayNum = item.getDate();
-              const isWorkday = workingDays.includes(daysMap[item.getDay()]);
-              const hasFree = dayHasFreeSlots(item);
-              const isSelected = selectedDate?.toDateString() === item.toDateString();
-              return (
-                <TouchableOpacity
-                  disabled={!isWorkday || !hasFree}
-                  onPress={() => setSelectedDate(item)}
-                  style={[
-                    styles.dayBtn,
-                    !isWorkday || !hasFree ? styles.dayDisabled : styles.dayEnabled,
-                    isSelected && styles.daySelected,
-                  ]}
-                >
-                  <Text style={!isWorkday || !hasFree ? styles.dayTextDisabled : styles.dayText}>
-                    {dayName}
-                  </Text>
-                  <Text style={!isWorkday || !hasFree ? styles.dayTextDisabled : styles.dayText}>
-                    {dayNum}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }}
-          />
-
-          {/* Time slots */}
-          {selectedDate ? (
-            <FlatList
-              data={slots}
-              keyExtractor={s => s.time.toISOString()}
-              numColumns={3}
-              contentContainerStyle={styles.slots}
-              renderItem={({ item }) => {
-                const label = item.time.toLocaleTimeString('pt-BR', {
-                  hour: '2-digit', minute: '2-digit'
-                });
-                const isSelected = selectedTime?.getTime() === item.time.getTime();
-                return (
-                  <TouchableOpacity
-                    disabled={!item.available}
-                    onPress={() => setSelectedTime(item.time)}
-                    style={[
-                      styles.slotBtn,
-                      item.available
-                        ? (isSelected ? styles.slotSelected : styles.slotEnabled)
-                        : styles.slotUnavailable,
-                    ]}
-                  >
-                    <Text style={
-                      item.available
-                        ? (isSelected ? styles.slotTextSelected : styles.slotText)
-                        : styles.slotTextUnavailable
-                    }>
-                      {label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
+          {loading ? (
+            <ActivityIndicator size="large" color={Colors.blue30} />
+          ) : error ? (
+            <Text text70 red30>{error}</Text>
           ) : (
-            <View style={styles.placeholder}>
-              <Text text90 grey40 center>
-                Selecione um dia com horários disponíveis
-              </Text>
-            </View>
+            <>
+              {/* dias */}
+              <FlatList
+                horizontal
+                data={days}
+                keyExtractor={d => d.toISOString()}
+                contentContainerStyle={styles.calendar}
+                renderItem={({ item }) => {
+                  const wd = item.getDay();
+                  const label = item.toLocaleDateString('pt-BR', { weekday: 'short' });
+                  const num = item.getDate();
+                  const isWorkday = workingDays.includes(daysMap[wd]);
+                  const hasFree = dayHasFreeSlots(item);
+                  const isSel = selectedDate?.toDateString() === item.toDateString();
+                  return (
+                    <TouchableOpacity
+                      disabled={!(isWorkday && hasFree)}
+                      onPress={() => setSelectedDate(item)}
+                      style={[
+                        styles.dayBtn,
+                        !isWorkday || !hasFree ? styles.dayDisabled : styles.dayEnabled,
+                        isSel && styles.daySelected,
+                      ]}
+                    >
+                      <Text style={(!isWorkday || !hasFree) ? styles.dayTextDisabled : styles.dayText}>{label}</Text>
+                      <Text style={(!isWorkday || !hasFree) ? styles.dayTextDisabled : styles.dayText}>{num}</Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+
+              {/* horários */}
+              {selectedDate ? (
+                <FlatList
+                  data={slots}
+                  keyExtractor={s => s.time.toISOString()}
+                  numColumns={3}
+                  contentContainerStyle={styles.slots}
+                  renderItem={({ item }) => {
+                    const lbl = item.time.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const isSel = selectedTime?.getTime() === item.time.getTime();
+                    return (
+                      <TouchableOpacity
+                        disabled={!item.available}
+                        onPress={() => setSelectedTime(item.time)}
+                        style={[
+                          styles.slotBtn,
+                          item.available
+                            ? (isSel ? styles.slotSelected : styles.slotEnabled)
+                            : styles.slotUnavailable,
+                        ]}
+                      >
+                        <Text style={
+                          item.available
+                            ? (isSel ? styles.slotTextSelected : styles.slotText)
+                            : styles.slotTextUnavailable
+                        }>{lbl}</Text>
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              ) : (
+                <View style={styles.placeholder}>
+                  <Text text90 grey40 center>Selecione um dia disponível</Text>
+                </View>
+              )}
+
+              {/* ações */}
+              <View style={styles.footer}>
+                <Button label="Fechar" link onPress={onClose} style={styles.footerBtn} />
+                {appointmentToEdit && (
+                  <Button label="Cancelar Consulta" link onPress={handleCancelAppointment} style={styles.footerBtn} />
+                )}
+                <Button
+                  label={appointmentToEdit ? "Salvar" : "Confirmar"}
+                  disabled={!selectedTime || loadingOp}
+                  onPress={handleConfirm}
+                  style={[styles.footerBtn, (!selectedTime || loadingOp) && styles.disabledBtn]}
+                />
+              </View>
+            </>
           )}
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Button label="Cancelar" link onPress={onCancel} style={styles.footerBtn} />
-            <Button
-              label="Confirmar"
-              disabled={!selectedTime}
-              onPress={handleConfirm}
-              style={[styles.footerBtn, !selectedTime && styles.disabledBtn]}
-            />
-          </View>
+          <Snackbar
+            visible={snackbar.visible}
+            message={snackbar.message}
+            onDismiss={() => setSnackbar(s => ({ ...s, visible: false }))}
+          />
         </View>
       </View>
     </Modal>
@@ -208,27 +260,17 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16,
   },
   container: {
-    width: '100%',
-    maxWidth: MODAL_WIDTH,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
+    width: '100%', maxWidth: MODAL_WIDTH,
+    backgroundColor: '#fff', borderRadius: 8, padding: 16,
   },
   calendar: { paddingVertical: 8 },
   dayBtn: {
-    width: 60,
-    height: 80,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 60, height: 80, marginHorizontal: 4,
+    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
   },
   dayEnabled: { backgroundColor: Colors.blue60 },
   dayDisabled: { backgroundColor: Colors.grey70 },
@@ -237,13 +279,7 @@ const styles = StyleSheet.create({
   dayTextDisabled: { color: '#ccc' },
 
   slots: { marginTop: 16, justifyContent: 'center' },
-  slotBtn: {
-    flex: 1,
-    margin: 4,
-    paddingVertical: 8,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
+  slotBtn: { flex: 1, margin: 4, paddingVertical: 8, borderRadius: 6, alignItems: 'center' },
   slotEnabled: { backgroundColor: Colors.blue60 },
   slotSelected: { backgroundColor: Colors.green30 },
   slotUnavailable: { backgroundColor: Colors.grey40 },
@@ -253,11 +289,7 @@ const styles = StyleSheet.create({
 
   placeholder: { paddingVertical: 32, justifyContent: 'center' },
 
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 24,
-  },
+  footer: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 24 },
   footerBtn: { marginLeft: 8 },
   disabledBtn: { backgroundColor: Colors.grey40 },
 });

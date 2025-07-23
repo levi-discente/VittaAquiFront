@@ -5,11 +5,12 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
 } from 'react-native';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
@@ -25,6 +26,8 @@ import {
 } from '@/utils/forms';
 import { Snackbar } from '../../components/Snackbar';
 import { AppSelect, Option } from '../../components/ui/AppSelect';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { KeyboardAwareScrollView } from 'react-native-ui-lib';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 const TOTAL_STEPS = 4;
@@ -50,6 +53,8 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   const [step, setStep] = useState(1);
   const [addressLoading, setAddressLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [snack, setSnack] = useState({
     visible: false,
     message: '',
@@ -91,10 +96,14 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 20}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Barra de progresso */}
           <View style={[styles.progressBarContainer, { width: CARD_WIDTH }]}>
             <View
@@ -106,6 +115,11 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <View style={[styles.card, { width: CARD_WIDTH }]}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
             <Text style={styles.title}>Crie sua conta</Text>
 
             <Formik
@@ -210,20 +224,45 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                           keyboardType="email-address"
                           autoCapitalize="none"
                         />
-                        <TextInput
-                          placeholder="Senha"
-                          style={styles.input}
-                          secureTextEntry
-                          value={values.password}
-                          onChangeText={handleChange('password')}
-                        />
-                        <TextInput
-                          placeholder="Confirme a senha"
-                          style={styles.input}
-                          secureTextEntry
-                          value={values.confirmPassword}
-                          onChangeText={handleChange('confirmPassword')}
-                        />
+                        <View style={[styles.inputWrapper, { marginBottom: 12 }]}>
+                          <TextInput
+                            placeholder="Senha"
+                            style={[styles.input, { paddingRight: 40 }]}
+                            secureTextEntry={!showPassword}
+                            value={values.password}
+                            onChangeText={handleChange('password')}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowPassword(v => !v)}
+                          >
+                            <MaterialCommunityIcons
+                              name={showPassword ? 'eye-off' : 'eye'}
+                              size={18}
+                              color="#888"
+                            />
+                          </TouchableOpacity>
+                        </View>
+
+                        <View style={[styles.inputWrapper, { marginBottom: 12 }]}>
+                          <TextInput
+                            placeholder="Confirme a senha"
+                            style={[styles.input, { paddingRight: 40 }]}
+                            secureTextEntry={!showConfirm}
+                            value={values.confirmPassword}
+                            onChangeText={handleChange('confirmPassword')}
+                          />
+                          <TouchableOpacity
+                            style={styles.eyeButton}
+                            onPress={() => setShowConfirm(v => !v)}
+                          >
+                            <MaterialCommunityIcons
+                              name={showConfirm ? 'eye-off' : 'eye'}
+                              size={18}
+                              color="#888"
+                            />
+                          </TouchableOpacity>
+                        </View>
                       </>
                     )}
 
@@ -404,7 +443,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
   },
   title: {
-    fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 20
+    fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20
   },
   input: {
     borderWidth: 1, borderColor: '#ccc', borderRadius: 4,
@@ -435,6 +474,16 @@ const styles = StyleSheet.create({
   link: {
     color: '#007AFF', textAlign: 'center', marginTop: 15
   },
+  eyeButton: {
+    position: 'absolute', right: 10,
+    top: Platform.OS === 'ios' ? 14 : 12,
+  },
+  inputWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+  logo: { width: 180, height: 180, alignSelf: 'center', marginBottom: 10 },
+  flex: { flex: 1 },
 });
 
 export default RegisterScreen;

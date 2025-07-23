@@ -1,7 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -10,13 +8,20 @@ import {
   ScrollView,
   StyleSheet,
   Dimensions,
+  Image,
+  Text as RNText,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { useAuth } from '../../hooks/useAuth';
-import { Snackbar } from '../../components/Snackbar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthStackParamList } from '@/navigation/AuthNavigator';
+import { useAuth } from '@/hooks/useAuth';
+import { Snackbar } from '@/components/Snackbar';
+import { View, Checkbox, Text } from 'react-native-ui-lib';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+
+const REMEMBER_KEY = '@app:rememberedEmail';
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { signIn } = useAuth();
@@ -25,12 +30,23 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [snack, setSnack] = useState({
-    visible: false,
-    message: '',
-    type: 'error' as 'error' | 'success' | 'warning',
-  });
+  const [snack, setSnack] = useState<{
+    visible: boolean;
+    message: string;
+    type: 'error' | 'success' | 'warning';
+  }>({ visible: false, message: '', type: 'error' });
+
+  useEffect(() => {
+    AsyncStorage.getItem(REMEMBER_KEY).then(stored => {
+      if (stored) {
+        setEmail(stored);
+        setRemember(true);
+      }
+    });
+  }, []);
 
   const showSnackbar = (message: string, type: 'error' | 'success' | 'warning' = 'error') =>
     setSnack({ visible: true, message, type });
@@ -39,6 +55,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     setLoading(true);
     try {
       await signIn(email.trim(), password);
+      if (remember) {
+        await AsyncStorage.setItem(REMEMBER_KEY, email.trim());
+      } else {
+        await AsyncStorage.removeItem(REMEMBER_KEY);
+      }
     } catch (err: any) {
       showSnackbar(err.response?.data?.message || 'Erro ao autenticar', 'error');
     } finally {
@@ -49,11 +70,21 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 20}
       >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={[styles.card, { width: CARD_WIDTH }]}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
+
             <Text style={styles.title}>Entrar</Text>
 
             <TextInput
@@ -65,27 +96,50 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               onChangeText={setEmail}
             />
 
-            <TextInput
-              placeholder="Senha"
-              style={styles.input}
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-            />
+            <View style={[styles.inputWrapper, { marginBottom: 12 }]}>
+              <TextInput
+                placeholder="Senha"
+                style={[styles.input, { paddingRight: 40 }]}
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword(v => !v)}
+              >
+                <MaterialCommunityIcons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={18}
+                  color="#888"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <View row centerV marginB-12>
+              <Checkbox
+                label="Lembrar e-mail"
+                value={remember}
+                onValueChange={setRemember}
+              />
+            </View>
 
             <TouchableOpacity
-              style={[styles.button, (!email || !password || loading) && styles.buttonDisabled]}
+              style={[
+                styles.button,
+                (!email || !password || loading) && styles.buttonDisabled
+              ]}
               onPress={handleLogin}
               disabled={!email || !password || loading}
             >
               {loading
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.buttonText}>Entrar</Text>
+                : <RNText style={styles.buttonText}>Entrar</RNText>
               }
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.link}>Ainda não tem conta? Cadastre-se</Text>
+              <RNText style={styles.link}>Ainda não tem conta? Cadastre-se</RNText>
             </TouchableOpacity>
           </View>
 
@@ -119,8 +173,14 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
   },
+  logo: {
+    width: 180,
+    height: 180,
+    alignSelf: 'center',
+    marginBottom: 10,
+  },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 20,
@@ -140,13 +200,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 12,
   },
-  buttonDisabled: { backgroundColor: '#A0A0A0' },
-  buttonText: { color: '#fff', fontSize: 16 },
+  buttonDisabled: {
+    backgroundColor: '#A0A0A0',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
   link: {
     color: '#007AFF',
     textAlign: 'center',
     marginTop: 15,
   },
+  flex: { flex: 1 },
+  eyeButton: {
+    position: 'absolute',
+    right: 10,
+    top: Platform.OS === 'ios' ? 14 : 12,
+  },
+  inputWrapper: {
+    position: 'relative',
+    width: '100%',
+  },
+
 });
 
 export default LoginScreen;

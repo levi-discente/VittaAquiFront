@@ -22,7 +22,7 @@ export const AvatarMenu: React.FC = () => {
 
   const goToProfile = () => {
     setOpen(false);
-    navigation.navigate('Home');
+    navigation.navigate('Profile');
   };
 
   return (

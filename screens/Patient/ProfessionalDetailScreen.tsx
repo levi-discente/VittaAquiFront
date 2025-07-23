@@ -313,32 +313,17 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           />
         </View>
 
+
         <AppointmentModal
           visible={bookingVisible}
-          onCancel={() => setBookingVisible(false)}
-          onConfirm={async (startISO, endISO) => {
-            try {
-              await createAppointment({
-                professional_id: Number(profileId),
-                start_time: startISO,
-                end_time: endISO,
-              });
-              setBookingVisible(false);
-              navigation.navigate('Appointments');
-            } catch {
-              /* TODO: por SnackBar */
-            }
+          onClose={() => setBookingVisible(false)}
+          onDone={() => {
+            setBookingVisible(false);
+            navigation.navigate('Appointments');
           }}
-          workingDays={profile.availableDaysOfWeek}
-          workingHours={{ start: profile.startHour, end: profile.endHour }}
-          existingAppointments={scheduleList.map((a) => ({
-            start: a.start_time,
-            end: a.end_time,
-          }))}
-          slotInterval={60}
-          daysAhead={14}
-          durationMinutes={60}
+          professionalId={Number(profileId)}
         />
+
       </ScrollView>
     </SafeAreaView>
   );
