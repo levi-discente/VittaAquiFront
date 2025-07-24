@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getProfessionalProfileById,
+  getProfessionalProfileByUserId,
   listProfessionals
 } from '@/api/professional';
 import {
@@ -60,6 +61,36 @@ export const useProfessionalProfile = (profileId: string) => {
       setLoading(false);
     }
   }, [profileId]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  return { profile, loading, error, refresh: fetchProfile };
+};
+
+export const useProfessionalProfileByUserId = (userId: number) => {
+  const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getProfessionalProfileByUserId(userId);
+      setProfile(data);
+    } catch (err: any) {
+      console.error(err);
+      setError(
+        err.response?.data?.error ??
+        err.message ??
+        'Erro ao carregar perfil.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     fetchProfile();
