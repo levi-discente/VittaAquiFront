@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
   View,
@@ -8,60 +8,94 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   KeyboardAvoidingView,
-} from 'react-native';
-import {
-  Text,
-  Button,
-  Colors,
-  Card,
-  TextField,
-} from 'react-native-ui-lib';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { Formik } from 'formik';
-import * as Yup from 'yup';
-import { useAuth } from '@/hooks/useAuth';
-import { useUser } from '@/hooks/useUser';
-import { Snackbar } from '@/components/Snackbar';
-import { AppSelect, Option } from '@/components/ui/AppSelect';
+} from "react-native";
+import { Text, Button, Colors, Card, TextField } from "react-native-ui-lib";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import { Formik } from "formik";
+import * as Yup from "yup";
+import { useAuth } from "@/hooks/useAuth";
+import { useUser } from "@/hooks/useUser";
+import { Snackbar } from "@/components/Snackbar";
+import { AppSelect, Option } from "@/components/ui/AppSelect";
 import {
   maskCPF,
   maskCEP,
   maskPhone,
   validateCPF,
   fetchAddressByCep,
-} from '@/utils/forms';
+} from "@/utils/forms";
+import { useNavigation } from "expo-router";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ProfessionalStackParamList } from "@/navigation/ProfessionalStack";
 
 const STATES: Option[] = [
-  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
-  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
-  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
-].map(s => ({ label: s, value: s }));
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
+].map((s) => ({ label: s, value: s }));
 
+type NavigationProp = NativeStackNavigationProp<
+  ProfessionalStackParamList,
+  "Home"
+>;
 const ProfileSchema = Yup.object().shape({
-  name: Yup.string().required('Nome obrigatório'),
-  email: Yup.string().email('Email inválido').required('Email obrigatório'),
+  name: Yup.string().required("Nome obrigatório"),
+  email: Yup.string().email("Email inválido").required("Email obrigatório"),
   cpf: Yup.string()
-    .required('CPF obrigatório')
-    .test('valid-cpf', 'CPF inválido', v => v ? validateCPF(v) : false),
+    .required("CPF obrigatório")
+    .test("valid-cpf", "CPF inválido", (v) => (v ? validateCPF(v) : false)),
   phone: Yup.string(),
-  cep: Yup.string().required('CEP obrigatório'),
-  uf: Yup.string().required('UF obrigatória'),
-  city: Yup.string().required('Cidade obrigatória'),
-  address: Yup.string().required('Endereço obrigatório'),
+  cep: Yup.string().required("CEP obrigatório"),
+  uf: Yup.string().required("UF obrigatória"),
+  city: Yup.string().required("Cidade obrigatória"),
+  address: Yup.string().required("Endereço obrigatório"),
 });
 
 const ProfileScreen: React.FC = () => {
   const { signOut } = useAuth();
   const { user, loading, updateUser } = useUser();
   const [editing, setEditing] = useState(false);
-  const [snack, setSnack] = useState({ visible: false, message: '', type: 'success' as 'success' | 'error' });
+  const [snack, setSnack] = useState({
+    visible: false,
+    message: "",
+    type: "success" as "success" | "error",
+  });
   const [addrLoading, setAddrLoading] = useState(false);
   const { width } = useWindowDimensions();
+  const navigation = useNavigation<NavigationProp>();
   const isWide = width >= 600;
 
   useEffect(() => {
     if (!loading && !user) {
-      setSnack({ visible: true, message: 'Não foi possível carregar o perfil', type: 'error' });
+      setSnack({
+        visible: true,
+        message: "Não foi possível carregar o perfil",
+        type: "error",
+      });
     }
   }, [loading, user]);
 
@@ -75,7 +109,9 @@ const ProfileScreen: React.FC = () => {
   if (!user) {
     return (
       <View style={styles.centered}>
-        <Text text70 red30>Perfil não disponível</Text>
+        <Text text70 red30>
+          Perfil não disponível
+        </Text>
       </View>
     );
   }
@@ -84,40 +120,43 @@ const ProfileScreen: React.FC = () => {
   const initialValues = {
     name: user.name,
     email: user.email,
-    cpf: user.cpf ? maskCPF(user.cpf) : '',
-    phone: user.phone ? maskPhone(user.phone) : '',
-    cep: user.cep ? maskCEP(user.cep) : '',
-    uf: user.uf || '',
-    city: user.city || '',
-    address: user.address || '',
+    cpf: user.cpf ? maskCPF(user.cpf) : "",
+    phone: user.phone ? maskPhone(user.phone) : "",
+    cep: user.cep ? maskCEP(user.cep) : "",
+    uf: user.uf || "",
+    city: user.city || "",
+    address: user.address || "",
   };
 
   // Campos estáticos para o Card, com máscara e multiline no endereço
   const displayFields = [
-    { label: 'CPF', value: user.cpf ? maskCPF(user.cpf) : '' },
-    { label: 'Telefone', value: user.phone ? maskPhone(user.phone) : '' },
-    { label: 'CEP', value: user.cep ? maskCEP(user.cep) : '' },
-    { label: 'UF', value: user.uf || '' },
-    { label: 'Cidade', value: user.city || '' },
-    { label: 'Endereço', value: user.address || '' },
+    { label: "CPF", value: user.cpf ? maskCPF(user.cpf) : "" },
+    { label: "Telefone", value: user.phone ? maskPhone(user.phone) : "" },
+    { label: "CEP", value: user.cep ? maskCEP(user.cep) : "" },
+    { label: "UF", value: user.uf || "" },
+    { label: "Cidade", value: user.city || "" },
+    { label: "Endereço", value: user.address || "" },
   ];
 
-  const showSnack = (message: string, type: 'success' | 'error' = 'success') => {
+  const showSnack = (
+    message: string,
+    type: "success" | "error" = "success"
+  ) => {
     setSnack({ visible: true, message, type });
   };
 
   const handleCepChange = async (text: string, setFieldValue: any) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 8);
-    setFieldValue('cep', maskCEP(text));
+    const cleaned = text.replace(/\D/g, "").slice(0, 8);
+    setFieldValue("cep", maskCEP(text));
     if (cleaned.length === 8) {
       setAddrLoading(true);
       try {
         const { uf, city, address } = await fetchAddressByCep(cleaned);
-        setFieldValue('uf', uf);
-        setFieldValue('city', city);
-        setFieldValue('address', address);
+        setFieldValue("uf", uf);
+        setFieldValue("city", city);
+        setFieldValue("address", address);
       } catch (err: any) {
-        showSnack(err.message, 'error');
+        showSnack(err.message, "error");
       } finally {
         setAddrLoading(false);
       }
@@ -128,7 +167,7 @@ const ProfileScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
       >
         <ScrollView
@@ -138,14 +177,32 @@ const ProfileScreen: React.FC = () => {
           {/* HEADER */}
           <View style={[styles.header, isWide && styles.headerWide]}>
             <View style={styles.avatarContainer}>
-              {user.image
-                ? <Ionicons name="person-circle" size={isWide ? 140 : 120} color={Colors.white} />
-                : <Ionicons name="person-circle" size={isWide ? 140 : 120} color={Colors.white} />
-              }
+              {user.image ? (
+                <Ionicons
+                  name="person-circle"
+                  size={isWide ? 140 : 120}
+                  color={Colors.white}
+                />
+              ) : (
+                <Ionicons
+                  name="person-circle"
+                  size={isWide ? 140 : 120}
+                  color={Colors.white}
+                />
+              )}
             </View>
-            <View style={[styles.headerText, isWide && { alignItems: 'flex-start' }]}>
-              <Text text40 white>{user.name}</Text>
-              <Text text90 white>{user.email}</Text>
+            <View
+              style={[
+                styles.headerText,
+                isWide && { alignItems: "flex-start" },
+              ]}
+            >
+              <Text text40 white>
+                {user.name}
+              </Text>
+              <Text text90 white>
+                {user.email}
+              </Text>
             </View>
           </View>
 
@@ -156,12 +213,18 @@ const ProfileScreen: React.FC = () => {
                   value ? (
                     <View
                       key={label}
-                      style={label === 'Endereço' ? styles.addressRow : styles.row}
+                      style={
+                        label === "Endereço" ? styles.addressRow : styles.row
+                      }
                     >
-                      <Text text90 grey40>{label}:</Text>
+                      <Text text90 grey40>
+                        {label}:
+                      </Text>
                       <Text
                         text70
-                        style={label === 'Endereço' ? styles.addressText : undefined}
+                        style={
+                          label === "Endereço" ? styles.addressText : undefined
+                        }
                       >
                         {value}
                       </Text>
@@ -170,6 +233,14 @@ const ProfileScreen: React.FC = () => {
                 )}
               </Card>
               <View style={[styles.actions, isWide && styles.actionsWide]}>
+                <Button
+                  outline
+                  label="Agenda de trabalho"
+                  outlineColor={Colors.black}
+                  labelStyle={{ color: Colors.black }}
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate("EditDoctorScheduler")}
+                />
                 <Button
                   outline
                   label="Editar Perfil"
@@ -197,14 +268,14 @@ const ProfileScreen: React.FC = () => {
                   // Remove máscara antes de enviar
                   await updateUser({
                     ...vals,
-                    cpf: vals.cpf.replace(/\D/g, ''),
-                    phone: vals.phone.replace(/\D/g, ''),
-                    cep: vals.cep.replace(/\D/g, ''),
+                    cpf: vals.cpf.replace(/\D/g, ""),
+                    phone: vals.phone.replace(/\D/g, ""),
+                    cep: vals.cep.replace(/\D/g, ""),
                   });
-                  showSnack('Perfil atualizado!', 'success');
+                  showSnack("Perfil atualizado!", "success");
                   setEditing(false);
                 } catch (err: any) {
-                  showSnack(err.message, 'error');
+                  showSnack(err.message, "error");
                 } finally {
                   setSubmitting(false);
                 }
@@ -220,16 +291,41 @@ const ProfileScreen: React.FC = () => {
                 isSubmitting,
               }) => (
                 <View style={styles.content}>
-                  <View style={[styles.rowInputs, isWide && styles.rowInputsWide]}>
+                  <View
+                    style={[styles.rowInputs, isWide && styles.rowInputsWide]}
+                  >
                     {[
-                      { key: 'name', label: 'Nome', keyboard: 'default', mask: null },
-                      { key: 'email', label: 'Email', keyboard: 'email-address', mask: null },
-                      { key: 'cpf', label: 'CPF', keyboard: 'numeric', mask: maskCPF },
-                      { key: 'phone', label: 'Telefone', keyboard: 'phone-pad', mask: maskPhone },
+                      {
+                        key: "name",
+                        label: "Nome",
+                        keyboard: "default",
+                        mask: null,
+                      },
+                      {
+                        key: "email",
+                        label: "Email",
+                        keyboard: "email-address",
+                        mask: null,
+                      },
+                      {
+                        key: "cpf",
+                        label: "CPF",
+                        keyboard: "numeric",
+                        mask: maskCPF,
+                      },
+                      {
+                        key: "phone",
+                        label: "Telefone",
+                        keyboard: "phone-pad",
+                        mask: maskPhone,
+                      },
                     ].map(({ key, label, keyboard, mask }) => (
                       <View
                         key={key}
-                        style={[styles.inputWrapper, isWide && styles.inputWrapperWide]}
+                        style={[
+                          styles.inputWrapper,
+                          isWide && styles.inputWrapperWide,
+                        ]}
                       >
                         <TextField
                           floatingPlaceholder
@@ -237,54 +333,84 @@ const ProfileScreen: React.FC = () => {
                           value={(values as any)[key]}
                           keyboardType={keyboard as any}
                           fieldStyle={styles.inputField}
-                          onChangeText={text =>
+                          onChangeText={(text) =>
                             mask
                               ? setFieldValue(key, mask(text))
                               : handleChange(key)(text)
                           }
-                          error={touched[key] && errors[key] ? (errors as any)[key] : undefined}
+                          error={
+                            touched[key] && errors[key]
+                              ? (errors as any)[key]
+                              : undefined
+                          }
                         />
                       </View>
                     ))}
 
-                    <View style={[styles.inputWrapper, isWide && styles.inputWrapperWide]}>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        isWide && styles.inputWrapperWide,
+                      ]}
+                    >
                       <TextField
                         floatingPlaceholder
                         placeholder="CEP"
                         value={values.cep}
                         keyboardType="numeric"
                         fieldStyle={styles.inputField}
-                        onChangeText={t => handleCepChange(t, setFieldValue)}
+                        onChangeText={(t) => handleCepChange(t, setFieldValue)}
                         trailingAccessory={addrLoading && <ActivityIndicator />}
-                        error={touched.cep && errors.cep ? errors.cep : undefined}
+                        error={
+                          touched.cep && errors.cep ? errors.cep : undefined
+                        }
                       />
                     </View>
 
-                    <View style={[styles.inputWrapper, isWide && styles.inputWrapperWide]}>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        isWide && styles.inputWrapperWide,
+                      ]}
+                    >
                       <AppSelect
                         options={STATES}
                         selectedValue={values.uf}
-                        onValueChange={val => setFieldValue('uf', val)}
+                        onValueChange={(val) => setFieldValue("uf", val)}
                         placeholder="UF"
                         containerStyle={styles.inputField}
                       />
                       {touched.uf && errors.uf && (
-                        <Text text90 red30>{errors.uf}</Text>
+                        <Text text90 red30>
+                          {errors.uf}
+                        </Text>
                       )}
                     </View>
 
-                    <View style={[styles.inputWrapper, isWide && styles.inputWrapperWide]}>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        isWide && styles.inputWrapperWide,
+                      ]}
+                    >
                       <TextField
                         floatingPlaceholder
                         placeholder="Cidade"
                         value={values.city}
                         fieldStyle={styles.inputField}
-                        onChangeText={handleChange('city')}
-                        error={touched.city && errors.city ? errors.city : undefined}
+                        onChangeText={handleChange("city")}
+                        error={
+                          touched.city && errors.city ? errors.city : undefined
+                        }
                       />
                     </View>
 
-                    <View style={[styles.inputWrapper, isWide && styles.inputWrapperWide]}>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        isWide && styles.inputWrapperWide,
+                      ]}
+                    >
                       <TextField
                         floatingPlaceholder
                         placeholder="Endereço"
@@ -292,8 +418,12 @@ const ProfileScreen: React.FC = () => {
                         multiline
                         numberOfLines={4}
                         fieldStyle={[styles.inputField, styles.multilineField]}
-                        onChangeText={handleChange('address')}
-                        error={touched.address && errors.address ? errors.address : undefined}
+                        onChangeText={handleChange("address")}
+                        error={
+                          touched.address && errors.address
+                            ? errors.address
+                            : undefined
+                        }
                       />
                     </View>
                   </View>
@@ -309,7 +439,7 @@ const ProfileScreen: React.FC = () => {
                       onPress={() => setEditing(false)}
                     />
                     <Button
-                      label={isSubmitting ? 'Salvando...' : 'Salvar'}
+                      label={isSubmitting ? "Salvando..." : "Salvar"}
                       disabled={isSubmitting}
                       style={styles.actionBtn}
                       onPress={handleSubmit as any}
@@ -325,7 +455,7 @@ const ProfileScreen: React.FC = () => {
           visible={snack.visible}
           message={snack.message}
           type={snack.type}
-          onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
+          onDismiss={() => setSnack((s) => ({ ...s, visible: false }))}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -336,32 +466,32 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: '#F5F6FA',
+    backgroundColor: "#F5F6FA",
   },
   scrollContent: {
     padding: 16,
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     backgroundColor: Colors.blue30,
     borderRadius: 8,
     padding: 24,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 16,
   },
   headerWide: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   avatarContainer: {
     marginBottom: 12,
   },
   headerText: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   content: {
     flex: 1,
@@ -369,66 +499,65 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: 8,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     marginBottom: 16,
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.grey70,
   },
   addressRow: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
+    flexDirection: "column",
+    alignItems: "flex-start",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: Colors.grey70,
   },
   addressText: {
     marginTop: 4,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   actions: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   actionsWide: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
   },
   actionBtn: {
     marginVertical: 6,
     marginLeft: 8,
   },
   rowInputs: {
-    flexDirection: 'column',
+    flexDirection: "column",
   },
   rowInputsWide: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
   inputWrapper: {
-    width: '100%',
+    width: "100%",
     marginBottom: 20,
   },
   inputWrapperWide: {
-    width: '48%',
+    width: "48%",
   },
   inputField: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: Colors.grey40,
     borderRadius: 6,
     paddingHorizontal: 12,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    paddingVertical: Platform.OS === "ios" ? 12 : 8,
   },
   multilineField: {
     minHeight: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
 });
 
 export default ProfileScreen;
-
