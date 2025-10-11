@@ -3,20 +3,16 @@ import { View, Text } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfessionalProfileByUserId } from '@/hooks/useProfessionals';
 import { isProfileIncomplete } from '@/utils/professional';
-import { router } from 'expo-router';
+import { useNavigation } from 'expo-router';
 
 const ProfessionalHomeScreen = () => {
   const { user } = useAuth();
   const { profile, loading } = useProfessionalProfileByUserId(Number(user?.id) ?? 0);
+  const navigation = useNavigation();
 
   useEffect(() => {
     if (!loading && profile && isProfileIncomplete(profile)) {
-      const timer = setTimeout(() => {
-        if ((router as any).isReady) {
-          router.replace('/professional/edit-profile');
-        }
-      }, 0); // Adiciona ao final da queue de renderização
-      return () => clearTimeout(timer);
+      navigation.replace('ConfigProfile');
     }
   }, [profile, loading]);
 

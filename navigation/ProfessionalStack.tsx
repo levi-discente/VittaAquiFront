@@ -47,7 +47,11 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
     <Stack.Screen
       name="ConfigProfile"
       component={EditProfileScreen}
-      options={{ title: 'Editar Perfil' }}
+      options={{
+        title: 'Página profissional',
+        headerLeft: LogoTitle,
+        headerRight: () => <AvatarMenu />,
+      }}
     />
   </Stack.Navigator>
 );
