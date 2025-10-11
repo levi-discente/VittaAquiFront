@@ -3,19 +3,19 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   TouchableOpacity,
   Switch,
   TextInput,
+  Pressable,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { Colors } from "react-native-ui-lib";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
-import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { timeOptions } from "@/utils/constants";
 import { MaterialIcons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { timeOptions } from "@/utils/constants";
+import { styles } from "./EditDoctorScheduler.styles";
 interface WorkSchedule {
   [key: string]: {
     enabled: boolean;
@@ -89,277 +89,289 @@ export default function EditDoctorScheduler() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.summary}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <Feather name="calendar" size={24} color="black" />
-          <Text style={{ marginLeft: 8, fontWeight: "bold", fontSize: 16 }}>
-            Resumo da Agenda
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Agenda e Atendimento</Text>
+          <Text style={styles.headerSubtitle}>
+            Configure seus horários e modalidades de atendimento
           </Text>
         </View>
 
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Dias de trabalho:</Text>
-          <Text style={styles.summaryValue}>
-            {getWorkingDaysCount()} dias/semana
-          </Text>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Horas semanais:</Text>
-          <Text style={styles.summaryValue}>{getTotalWeeklyHours()}h</Text>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Modalidade:</Text>
-          <Text style={styles.summaryValue}>
-            {serviceSettings.only_online
-              ? "Online"
-              : serviceSettings.only_presential
-              ? "Presencial"
-              : "Híbrida"}
-          </Text>
-        </View>
-
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>Preço da consulta:</Text>
-          <Text style={styles.summaryValue}>
-            R$ {serviceSettings.price || "0,00"}
-          </Text>
-        </View>
-      </View>
-      {/* Serviços e Preços */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>💲 Serviços e Preços</Text>
-        <Text style={styles.cardDescription}>
-          Configure seus serviços e valores
-        </Text>
-
-        <Text style={styles.label}>Serviços Oferecidos</Text>
-        <TextInput
-          style={[styles.input, styles.textarea]}
-          multiline
-          placeholder="Consulta Cardiológica, Eletrocardiograma, Holter 24h"
-          value={serviceSettings.services}
-          onChangeText={(text) =>
-            setServiceSettings((prev) => ({ ...prev, services: text }))
-          }
-        />
-        <Text style={styles.helperText}>Separe os serviços por vírgula</Text>
-
-        <Text style={styles.label}>Preço da Consulta (R$)</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="100"
-          value={serviceSettings.price}
-          onChangeText={(text) =>
-            setServiceSettings((prev) => ({ ...prev, price: text }))
-          }
-        />
-      </View>
-
-      {/* Modalidade de Atendimento */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Modalidade de Atendimento</Text>
-        <Text style={styles.cardDescription}>
-          Configure como você atende seus pacientes
-        </Text>
-
-        <View style={[styles.row, { marginTop: 8 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <MaterialIcons name="computer" size={24} color="black" />
-            <Text style={styles.label}>Online</Text>
-          </View>
-          <Switch
-            value={serviceSettings.only_online}
-            onValueChange={(val) =>
-              setServiceSettings((prev) => ({
-                ...prev,
-                only_online: val,
-                only_presential: val ? false : prev.only_presential, // desativa presencial se online ativado
-              }))
-            }
-          />
-        </View>
-
-        <View style={[styles.row, { marginTop: 8 }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Entypo name="location-pin" size={24} color="black" />
-            <Text style={styles.label}>Presencial</Text>
-          </View>
-          <Switch
-            value={serviceSettings.only_presential}
-            onValueChange={(val) =>
-              setServiceSettings((prev) => ({
-                ...prev,
-                only_presential: val,
-                only_online: val ? false : prev.only_online, // desativa online se presencial ativado
-              }))
-            }
-          />
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 8,
-        }}
-      >
-        <MaterialCommunityIcons name="timer-outline" size={24} color="black" />
-        <Text style={styles.title}>Horários de Atendimento</Text>
-      </View>
-
-      {daysOfWeek.map((day) => (
-        <View key={day.key} style={styles.dayContainer}>
-          <View style={styles.row}>
-            <Text style={styles.dayLabel}>{day.label}</Text>
-            <Switch
-              value={workSchedule[day.key].enabled}
-              onValueChange={(val) => handleDayToggle(day.key, val)}
-            />
-          </View>
-
-          {workSchedule[day.key].enabled && (
-            <View style={styles.timeRow}>
-              <Picker
-                selectedValue={workSchedule[day.key].startTime}
-                style={styles.picker}
-                onValueChange={(val) =>
-                  handleTimeChange(day.key, "startTime", val)
-                }
-              >
-                {timeOptions.map((time) => (
-                  <Picker.Item key={time} label={time} value={time} />
-                ))}
-              </Picker>
-
-              <Picker
-                selectedValue={workSchedule[day.key].endTime}
-                style={styles.picker}
-                onValueChange={(val) =>
-                  handleTimeChange(day.key, "endTime", val)
-                }
-              >
-                {timeOptions.map((time) => (
-                  <Picker.Item key={time} label={time} value={time} />
-                ))}
-              </Picker>
+        <View style={styles.content}>
+          {/* Summary Card */}
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryHeader}>
+              <View style={styles.summaryIconContainer}>
+                <Ionicons name="stats-chart" size={20} color="#7c3aed" />
+              </View>
+              <Text style={styles.summaryTitle}>Resumo da Agenda</Text>
             </View>
-          )}
-        </View>
-      ))}
 
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => alert("Configurações salvas!")}
-      >
-        <Text style={styles.saveText}>Salvar Configurações</Text>
-      </TouchableOpacity>
-    </ScrollView>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Dias de trabalho</Text>
+                <View style={styles.statsBadge}>
+                  <Ionicons name="calendar" size={14} color="#16a34a" />
+                  <Text style={styles.statsBadgeText}>
+                    {getWorkingDaysCount()} dias/semana
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Horas semanais</Text>
+                <View style={styles.statsBadge}>
+                  <Ionicons name="time" size={14} color="#16a34a" />
+                  <Text style={styles.statsBadgeText}>
+                    {getTotalWeeklyHours()}h
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Modalidade</Text>
+                <View style={styles.summaryBadge}>
+                  <Text style={styles.summaryBadgeText}>
+                    {serviceSettings.only_online
+                      ? "Online"
+                      : serviceSettings.only_presential
+                      ? "Presencial"
+                      : "Híbrida"}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Preço da consulta</Text>
+                <Text style={styles.summaryValue}>
+                  R$ {serviceSettings.price || "0,00"}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Services and Pricing */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>💰 Serviços e Preços</Text>
+              <Text style={styles.cardDescription}>
+                Configure seus serviços e valores de consulta
+              </Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Serviços Oferecidos</Text>
+              <TextInput
+                style={[styles.input, styles.textarea]}
+                multiline
+                placeholder="Ex: Consulta Cardiológica, Eletrocardiograma..."
+                placeholderTextColor="#9ca3af"
+                value={serviceSettings.services}
+                onChangeText={(text) =>
+                  setServiceSettings((prev) => ({ ...prev, services: text }))
+                }
+              />
+              <Text style={styles.helperText}>
+                💡 Separe os serviços por vírgula
+              </Text>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Preço da Consulta (R$)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="numeric"
+                placeholder="100,00"
+                placeholderTextColor="#9ca3af"
+                value={serviceSettings.price}
+                onChangeText={(text) =>
+                  setServiceSettings((prev) => ({ ...prev, price: text }))
+                }
+              />
+            </View>
+          </View>
+
+          {/* Modality Section */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>🏥 Modalidade de Atendimento</Text>
+              <Text style={styles.cardDescription}>
+                Escolha como você atende seus pacientes
+              </Text>
+            </View>
+
+            <Pressable
+              style={[
+                styles.modalityRow,
+                serviceSettings.only_online && styles.modalityRowActive,
+              ]}
+              onPress={() =>
+                setServiceSettings((prev) => ({
+                  ...prev,
+                  only_online: !prev.only_online,
+                  only_presential: prev.only_online
+                    ? prev.only_presential
+                    : false,
+                }))
+              }
+            >
+              <View style={styles.modalityLeft}>
+                <View style={styles.modalityIconContainer}>
+                  <MaterialIcons name="computer" size={22} color="#4f46e5" />
+                </View>
+                <Text style={styles.modalityLabel}>Atendimento Online</Text>
+              </View>
+              <Switch
+                value={serviceSettings.only_online}
+                onValueChange={(val) =>
+                  setServiceSettings((prev) => ({
+                    ...prev,
+                    only_online: val,
+                    only_presential: val ? false : prev.only_presential,
+                  }))
+                }
+                trackColor={{ false: "#d1d5db", true: "#a78bfa" }}
+                thumbColor={serviceSettings.only_online ? "#7c3aed" : "#f3f4f6"}
+              />
+            </Pressable>
+
+            <Pressable
+              style={[
+                styles.modalityRow,
+                serviceSettings.only_presential && styles.modalityRowActive,
+              ]}
+              onPress={() =>
+                setServiceSettings((prev) => ({
+                  ...prev,
+                  only_presential: !prev.only_presential,
+                  only_online: prev.only_presential ? prev.only_online : false,
+                }))
+              }
+            >
+              <View style={styles.modalityLeft}>
+                <View style={styles.modalityIconContainer}>
+                  <Entypo name="location-pin" size={22} color="#4f46e5" />
+                </View>
+                <Text style={styles.modalityLabel}>Atendimento Presencial</Text>
+              </View>
+              <Switch
+                value={serviceSettings.only_presential}
+                onValueChange={(val) =>
+                  setServiceSettings((prev) => ({
+                    ...prev,
+                    only_presential: val,
+                    only_online: val ? false : prev.only_online,
+                  }))
+                }
+                trackColor={{ false: "#d1d5db", true: "#a78bfa" }}
+                thumbColor={
+                  serviceSettings.only_presential ? "#7c3aed" : "#f3f4f6"
+                }
+              />
+            </Pressable>
+          </View>
+
+          {/* Schedule Section */}
+          <View style={styles.sectionHeader}>
+            <View
+              style={[
+                styles.sectionIconContainer,
+                { backgroundColor: "#dbeafe" },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="clock-outline"
+                size={20}
+                color="#1e40af"
+              />
+            </View>
+            <Text style={styles.sectionTitle}>Horários de Atendimento</Text>
+          </View>
+
+          {daysOfWeek.map((day) => {
+            const isEnabled = workSchedule[day.key].enabled;
+            return (
+              <View
+                key={day.key}
+                style={[styles.dayCard, isEnabled && styles.dayCardActive]}
+              >
+                <View style={styles.dayHeader}>
+                  <Text
+                    style={[
+                      styles.dayLabel,
+                      !isEnabled && styles.dayLabelInactive,
+                    ]}
+                  >
+                    {day.label}
+                  </Text>
+                  <Switch
+                    value={isEnabled}
+                    onValueChange={(val) => handleDayToggle(day.key, val)}
+                    trackColor={{ false: "#d1d5db", true: "#a78bfa" }}
+                    thumbColor={isEnabled ? "#7c3aed" : "#f3f4f6"}
+                  />
+                </View>
+
+                {isEnabled && (
+                  <View style={styles.timeRow}>
+                    <View style={styles.timePickerContainer}>
+                      <Text style={styles.timeLabel}>Início</Text>
+                      <View style={styles.pickerWrapper}>
+                        <Picker
+                          selectedValue={workSchedule[day.key].startTime}
+                          style={styles.picker}
+                          onValueChange={(val) =>
+                            handleTimeChange(day.key, "startTime", val)
+                          }
+                        >
+                          {timeOptions.map((time) => (
+                            <Picker.Item key={time} label={time} value={time} />
+                          ))}
+                        </Picker>
+                      </View>
+                    </View>
+
+                    <View style={styles.timePickerContainer}>
+                      <Text style={styles.timeLabel}>Término</Text>
+                      <View style={styles.pickerWrapper}>
+                        <Picker
+                          selectedValue={workSchedule[day.key].endTime}
+                          style={styles.picker}
+                          onValueChange={(val) =>
+                            handleTimeChange(day.key, "endTime", val)
+                          }
+                        >
+                          {timeOptions.map((time) => (
+                            <Picker.Item key={time} label={time} value={time} />
+                          ))}
+                        </Picker>
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Save Button - Fixed at bottom */}
+      <View style={styles.saveButtonContainer}>
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveButton,
+            pressed && styles.saveButtonPressed,
+          ]}
+          onPress={() => alert("Configurações salvas com sucesso!")}
+        >
+          <View style={styles.saveButtonContent}>
+            <Ionicons name="checkmark-circle" size={22} color="#fff" />
+            <Text style={styles.saveText}>Salvar Configurações</Text>
+          </View>
+        </Pressable>
+      </View>
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#F9FAFB" },
-  title: { fontSize: 24, fontWeight: "bold" },
-
-  // Card genérico para serviços, horários e resumo
-  card: {
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: Colors.white,
-    borderRadius: 8,
-    borderWidth: 0.5,
-    borderColor: Colors.white,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.09,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-
-  cardTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 4 },
-  cardDescription: { fontSize: 14, color: "#666", marginBottom: 8 },
-
-  label: { fontSize: 16, marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
-    padding: 8,
-    backgroundColor: "#fff",
-    marginBottom: 8,
-  },
-  textarea: { height: 80, textAlignVertical: "top" },
-  helperText: { fontSize: 12, color: "#666", marginBottom: 8 },
-
-  dayContainer: {
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: Colors.white,
-    borderRadius: 8,
-    width: "100%",
-    borderColor: Colors.white,
-    borderWidth: 0.5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.09,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  dayLabel: { fontSize: 16, flex: 1 },
-  timeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 8,
-    gap: 8,
-  },
-  picker: { flex: 1, height: 60, backgroundColor: "#f0f0f0", borderRadius: 6 },
-
-  summary: {
-    marginTop: 24,
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: Colors.white,
-    borderWidth: 0.5,
-    borderColor: Colors.white,
-    borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.09,
-    shadowRadius: 1,
-    elevation: 2,
-  },
-
-  saveButton: {
-    marginTop: 24,
-    marginBottom: 32,
-    padding: 12,
-    backgroundColor: "#007AFF",
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  saveText: { color: "#fff", fontWeight: "bold" },
-  summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 4,
-  },
-  summaryLabel: { color: "#666", fontSize: 14 },
-  summaryValue: { fontWeight: "500", fontSize: 14 },
-});

@@ -7,6 +7,7 @@ import ProfessionalHome from "@/screens/Professional/Home";
 import { AvatarMenu } from "@/components/ui/AvatarMenu";
 import EditProfileScreen from "@/screens/Professional/EditProfile";
 import EditDoctorScheduler from "@/screens/Professional/EditDoctorScheduler";
+import AllPatientsScreen from "@/screens/Professional/AllPatientsScreen";
 
 export type ProfessionalStackParamList = {
   Home: undefined;
@@ -14,6 +15,7 @@ export type ProfessionalStackParamList = {
   Profile: undefined;
   ConfigProfile: undefined;
   EditDoctorScheduler: undefined;
+  AllPatients: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfessionalStackParamList>();
@@ -26,8 +28,7 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       name="Home"
       component={ProfessionalHome}
       options={{
-        title: "Início",
-        headerLeft: LogoTitle,
+        title: "Área do Profissional",
         headerRight: () => <AvatarMenu />,
       }}
     />
@@ -56,6 +57,15 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       name="EditDoctorScheduler"
       component={EditDoctorScheduler}
       options={{ title: "Agenda de Trabalho" }}
+    />
+
+    <Stack.Screen
+      name="AllPatients"
+      component={AllPatientsScreen}
+      options={{
+        title: "",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
   </Stack.Navigator>
 );
