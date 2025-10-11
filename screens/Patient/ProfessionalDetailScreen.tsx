@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -21,7 +21,6 @@ import { useProfessionalProfile } from '@/hooks/useProfessionals';
 import { maskPhone } from '@/utils/forms';
 import MapComponent from '@/components/MapComponent';
 import { AppointmentModal } from '@/components/AppointmentModal';
-import { createAppointment } from '@/api/appointment';
 import { useProfessionalSchedule } from '@/hooks/useAppointments';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfessionalDetail'>;

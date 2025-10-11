@@ -479,5 +479,4 @@ const ProfessionalHomeScreen = () => {
   );
 };
 
-
 export default ProfessionalHomeScreen;

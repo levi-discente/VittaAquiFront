@@ -33,11 +33,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [snack, setSnack] = useState<{
-    visible: boolean;
-    message: string;
-    type: 'error' | 'success' | 'warning';
-  }>({ visible: false, message: '', type: 'error' });
 
   useEffect(() => {
     AsyncStorage.getItem(REMEMBER_KEY).then(stored => {
@@ -48,8 +43,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     });
   }, []);
 
-  const showSnackbar = (message: string, type: 'error' | 'success' | 'warning' = 'error') =>
-    setSnack({ visible: true, message, type });
 
   const handleLogin = async () => {
     setLoading(true);
@@ -61,7 +54,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.removeItem(REMEMBER_KEY);
       }
     } catch (err: any) {
-      showSnackbar(err.response?.data?.message || 'Erro ao autenticar', 'error');
+      Snackbar.show({ text: err.response?.data?.message || 'Erro ao autenticar', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -143,12 +136,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <Snackbar
-            visible={snack.visible}
-            message={snack.message}
-            type={snack.type}
-            onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
-          />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

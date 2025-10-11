@@ -165,3 +165,10 @@ export const getProfessionalProfileByUserId = async (
   };
 };
 
+export const updateProfessionalProfile = async (
+  profileId: string | number,
+  data: Partial<ProfessionalProfile>
+): Promise<ProfessionalProfile> => {
+  const response = await api.put<ProfessionalProfile>(`/professional/profile/${profileId}`, data);
+  return response.data;
+};

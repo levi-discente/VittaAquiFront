@@ -235,14 +235,6 @@ const ProfileScreen: React.FC = () => {
               <View style={[styles.actions, isWide && styles.actionsWide]}>
                 <Button
                   outline
-                  label="Agenda de trabalho"
-                  outlineColor={Colors.black}
-                  labelStyle={{ color: Colors.black }}
-                  style={styles.actionBtn}
-                  onPress={() => navigation.navigate("EditDoctorScheduler")}
-                />
-                <Button
-                  outline
                   label="Editar Perfil"
                   outlineColor={Colors.blue30}
                   labelStyle={{ color: Colors.blue30 }}

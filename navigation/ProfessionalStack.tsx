@@ -49,14 +49,14 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
 
     <Stack.Screen
       name="ConfigProfile"
-      component={EditProfileScreen}
-      options={{ title: "Editar Perfil" }}
+      component={EditDoctorScheduler}
+      options={{ title: "Minhas Configurações" }}
     />
 
     <Stack.Screen
       name="EditDoctorScheduler"
       component={EditDoctorScheduler}
-      options={{ title: "Agenda de Trabalho" }}
+      options={{ title: "Perfil do Profissional" }}
     />
 
     <Stack.Screen

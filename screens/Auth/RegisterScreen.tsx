@@ -27,7 +27,6 @@ import {
 import { Snackbar } from '../../components/Snackbar';
 import { AppSelect, Option } from '../../components/ui/AppSelect';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { KeyboardAwareScrollView } from 'react-native-ui-lib';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 const TOTAL_STEPS = 4;
@@ -87,8 +86,6 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     }),
   });
 
-  const showSnackbar = (message: string, type: 'success' | 'error' | 'warning' = 'success') =>
-    setSnack({ visible: true, message, type });
 
   const ufOptions = useMemo(() => statesBR, []);
   const catOptions = useMemo(() => categories, []);
@@ -147,14 +144,17 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                     phone: values.phone.replace(/\D/g, ''),
                     cep: values.cep.replace(/\D/g, ''),
                   });
-                  showSnackbar('Cadastro realizado com sucesso!', 'success');
+                  Snackbar.show({
+                    text: 'Cadastro realizado com sucesso!',
+                    type: 'success',
+                  })
                 } catch (error: any) {
                   const backendMsg =
                     error.response?.data?.error ??
                     error.response?.data?.message ??
                     error.message ??
                     'Erro ao cadastrar';
-                  showSnackbar(backendMsg, 'error');
+                  Snackbar.show({ text: backendMsg, type: 'error' });
                 }
               }}
             >
@@ -181,7 +181,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                     return acc;
                   }, {} as Record<string, string>);
                   if (Object.keys(stepErr).length) {
-                    showSnackbar(Object.values(stepErr)[0], 'error');
+                    Snackbar.show({ text: Object.values(stepErr)[0], type: 'error' });
                     return false;
                   }
                   return true;
@@ -205,7 +205,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                       setFieldValue('city', city);
                       setFieldValue('address', address);
                     } catch (err: any) {
-                      showSnackbar(err.message, 'warning');
+                      Snackbar.show({ text: err.message, type: 'warning' });
                     } finally {
                       setAddressLoading(false);
                     }
@@ -403,13 +403,6 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.link}>Já tem conta? Faça login</Text>
             </TouchableOpacity>
           </View>
-
-          <Snackbar
-            visible={snack.visible}
-            message={snack.message}
-            type={snack.type}
-            onDismiss={() => setSnack(s => ({ ...s, visible: false }))}
-          />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
