@@ -11,7 +11,7 @@ import {
 import { Text, Button, Colors } from 'react-native-ui-lib';
 import { updateAppointment, createAppointment } from '@/api/appointment';
 import { Appointment } from '@/types/appointment';
-import { Snackbar } from './Snackbar';
+import Snackbar from './Snackbar';
 import { useProfessionalAppointmentData } from '@/hooks/useProfessionalAppointmentData';
 import { Ionicons } from '@expo/vector-icons';
 import { formatDateTimeLocal } from '@/utils/datetime';
@@ -52,7 +52,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const [selectedTime, setSelectedTime] = useState<Date | null>(null);
   const [busyRanges, setBusyRanges] = useState<{ start: Date; end: Date }[]>([]);
   const [loadingOp, setLoadingOp] = useState(false);
-  const [snackbar, setSnackbar] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
 
 
   useEffect(() => {
@@ -124,19 +123,19 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           end_time: enISO,
           status: appointmentToEdit.status
         });
-        setSnackbar({ visible: true, message: 'Agendamento atualizado!' });
+        Snackbar.show({ text: 'Agendamento atualizado!', type: 'success' });
       } else {
         await createAppointment({
           professional_id: professionalId,
           start_time: stISO,
           end_time: enISO
         });
-        setSnackbar({ visible: true, message: 'Agendamento criado!' });
+        Snackbar.show({ text: 'Agendamento criado!', type: 'success' });
       }
       onDone();
       onClose();
     } catch (err: any) {
-      setSnackbar({ visible: true, message: err.message || 'Erro na operação' });
+      Snackbar.show({ text: err.message || 'Erro na operação', type: 'error' });
     } finally {
       setLoadingOp(false);
     }
@@ -237,8 +236,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
             </>
           )}
 
-          <Snackbar
-          />
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
