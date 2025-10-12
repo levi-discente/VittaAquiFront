@@ -1,17 +1,21 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { LogoTitle } from '@/components/ui/logo';
-import AppointmentsScreen from '@/screens/Common/AppointmentsScreen';
-import ProfileScreen from '@/screens/Common/ProfileScreen';
-import ProfessionalHome from '@/screens/Professional/Home';
-import { AvatarMenu } from '@/components/ui/AvatarMenu';
-import EditProfileScreen from '@/screens/Professional/EditProfile';
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { LogoTitle } from "@/components/ui/logo";
+import AppointmentsScreen from "@/screens/Common/AppointmentsScreen";
+import ProfileScreen from "@/screens/Common/ProfileScreen";
+import ProfessionalHome from "@/screens/Professional/Home";
+import { AvatarMenu } from "@/components/ui/AvatarMenu";
+import EditProfileScreen from "@/screens/Professional/EditProfile";
+import EditDoctorScheduler from "@/screens/Professional/EditDoctorScheduler";
+import AllPatientsScreen from "@/screens/Professional/AllPatientsScreen";
 
 export type ProfessionalStackParamList = {
   Home: undefined;
   Appointments: undefined;
   Profile: undefined;
   ConfigProfile: undefined;
+  EditDoctorScheduler: undefined;
+  AllPatients: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfessionalStackParamList>();
@@ -24,8 +28,7 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       name="Home"
       component={ProfessionalHome}
       options={{
-        title: 'Início',
-        headerLeft: LogoTitle,
+        title: "Área do Profissional",
         headerRight: () => <AvatarMenu />,
       }}
     />
@@ -33,7 +36,7 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       name="Appointments"
       component={AppointmentsScreen}
       options={{
-        title: 'Agenda',
+        title: "Agenda",
         headerLeft: LogoTitle,
         headerRight: () => <AvatarMenu />,
       }}
@@ -41,15 +44,26 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
     <Stack.Screen
       name="Profile"
       component={ProfileScreen}
-      options={{ title: 'Perfil' }}
+      options={{ title: "Perfil" }}
     />
 
     <Stack.Screen
       name="ConfigProfile"
-      component={EditProfileScreen}
+      component={EditDoctorScheduler}
+      options={{ title: "Minhas Configurações" }}
+    />
+
+    <Stack.Screen
+      name="EditDoctorScheduler"
+      component={EditDoctorScheduler}
+      options={{ title: "Perfil do Profissional" }}
+    />
+
+    <Stack.Screen
+      name="AllPatients"
+      component={AllPatientsScreen}
       options={{
-        title: 'Página profissional',
-        headerLeft: LogoTitle,
+        title: "",
         headerRight: () => <AvatarMenu />,
       }}
     />
