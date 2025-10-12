@@ -14,6 +14,7 @@ import { Appointment } from '@/types/appointment';
 import { Snackbar } from './Snackbar';
 import { useProfessionalAppointmentData } from '@/hooks/useProfessionalAppointmentData';
 import { Ionicons } from '@expo/vector-icons';
+import { formatDateTimeLocal } from '@/utils/datetime';
 
 export type AppointmentModalProps = {
   visible: boolean;
@@ -114,8 +115,8 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
   const handleConfirm = async () => {
     if (!selectedTime) return;
     setLoadingOp(true);
-    const stISO = selectedTime.toISOString();
-    const enISO = new Date(selectedTime.getTime() + durationMinutes * 60000).toISOString();
+    const stISO = formatDateTimeLocal(selectedTime);
+    const enISO = formatDateTimeLocal(new Date(selectedTime.getTime() + durationMinutes * 60000));
     try {
       if (appointmentToEdit) {
         await updateAppointment(appointmentToEdit.id, {
@@ -237,9 +238,6 @@ export const AppointmentModal: React.FC<AppointmentModalProps> = ({
           )}
 
           <Snackbar
-            visible={snackbar.visible}
-            message={snackbar.message}
-            onDismiss={() => setSnackbar(s => ({ ...s, visible: false }))}
           />
         </TouchableOpacity>
       </TouchableOpacity>

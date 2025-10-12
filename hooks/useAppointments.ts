@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   getMyAppointments,
-  getProfessionalSchedule,
   createAppointment,
   updateAppointment,
   deleteAppointment
@@ -48,35 +47,3 @@ export function useMyAppointments() {
   };
 }
 
-/**
- * Hook para listar agenda de um profissional específico
- */
-export function useProfessionalSchedule(professionalId: number) {
-  const [schedule, setSchedule] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const list = await getProfessionalSchedule(professionalId);
-      setSchedule(list);
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erro ao carregar agenda');
-    } finally {
-      setLoading(false);
-    }
-  }, [professionalId]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
-
-  return {
-    appointments: schedule,
-    loading,
-    error,
-    refresh: fetch,
-  };
-}

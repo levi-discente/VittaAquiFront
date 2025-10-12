@@ -21,7 +21,6 @@ import { useProfessionalProfile } from '@/hooks/useProfessionals';
 import { maskPhone } from '@/utils/forms';
 import MapComponent from '@/components/MapComponent';
 import { AppointmentModal } from '@/components/AppointmentModal';
-import { useProfessionalSchedule } from '@/hooks/useAppointments';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfessionalDetail'>;
 
@@ -32,19 +31,14 @@ const CONTENT_WIDTH = Math.min(width - PADDING * 2, 500);
 const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { profileId } = route.params;
   const { profile, loading, error, refresh } = useProfessionalProfile(profileId);
-  const { appointments, loading: schedLoading } = useProfessionalSchedule(
-    Number(profileId)
-  );
 
   const [bookingVisible, setBookingVisible] = useState(false);
 
   const servicesList: string[] = profile?.services
     ? Array.isArray(profile.services)
       ? profile.services
-      : profile.services.split(',')
+      : []
     : [];
-
-  const scheduleList = appointments ?? [];
 
   const onShare = async () => {
     if (!profile) return;

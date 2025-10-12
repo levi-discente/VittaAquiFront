@@ -15,16 +15,12 @@ export const createAppointment = async (
 };
 
 export const getMyAppointments = async (): Promise<Appointment[]> => {
-  const response = await api.get<Appointment[]>(`${BASE}/my`);
+  const response = await api.get<Appointment[]>(`${BASE}/my-appointments`);
   return response.data;
 };
 
-export const getProfessionalSchedule = async (
-  professionalId: number
-): Promise<Appointment[]> => {
-  const response = await api.get<Appointment[]>(
-    `${BASE}/professional/${professionalId}`
-  );
+export const getAppointmentById = async (id: number): Promise<Appointment> => {
+  const response = await api.get<Appointment>(`${BASE}/${id}`);
   return response.data;
 };
 
@@ -38,4 +34,20 @@ export const updateAppointment = async (
 
 export const deleteAppointment = async (id: number): Promise<void> => {
   await api.delete(`${BASE}/${id}`);
+};
+
+export const getProfessionalAppointments = async (
+  professionalId: number,
+  params?: {
+    start_date?: string;
+    end_date?: string;
+    skip?: number;
+    limit?: number;
+  }
+): Promise<Appointment[]> => {
+  const response = await api.get<Appointment[]>(
+    `/professionals/${professionalId}/appointments`,
+    { params }
+  );
+  return response.data;
 };

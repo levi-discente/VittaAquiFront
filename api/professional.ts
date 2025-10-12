@@ -38,14 +38,14 @@ interface RawProfessional {
 export const createProfessionalProfile = async (
   data: Partial<ProfessionalProfile>
 ): Promise<ProfessionalProfile> => {
-  const response = await api.post<ProfessionalProfile>('/professional/profile', data);
+  const response = await api.post<ProfessionalProfile>('/professionals/', data);
   return response.data;
 };
 
 export const getProfessionalProfileById = async (
   profileId: string
 ): Promise<ProfessionalProfile> => {
-  const response = await api.get<RawProfessional>(`/professional/profile/${profileId}`);
+  const response = await api.get<RawProfessional>(`/professionals/${profileId}`);
   const p = response.data;
   const rawUnavailable = p.unavailable_dates ?? [];
   return {
@@ -86,7 +86,7 @@ export const getProfessionalProfileById = async (
 export const listProfessionals = async (
   filters: ProfessionalFilter
 ): Promise<ProfessionalProfile[]> => {
-  const response = await api.get<RawProfessional[]>('/professional/list', { params: filters });
+  const response = await api.get<RawProfessional[]>('/professionals/', { params: filters });
   return response.data.map(p => {
     const rawUnavailable = p.unavailable_dates ?? [];
     return {
@@ -169,6 +169,78 @@ export const updateProfessionalProfile = async (
   profileId: string | number,
   data: Partial<ProfessionalProfile>
 ): Promise<ProfessionalProfile> => {
-  const response = await api.put<ProfessionalProfile>(`/professional/profile/${profileId}`, data);
+  const response = await api.put<ProfessionalProfile>(`/professionals/${profileId}`, data);
+  return response.data;
+};
+
+export const getMyProfessionalProfile = async (): Promise<ProfessionalProfile> => {
+  const response = await api.get<RawProfessional>('/professionals/me');
+  const p = response.data;
+  const rawUnavailable = p.unavailable_dates ?? [];
+  return {
+    id: String(p.id),
+    userId: String(p.user_id),
+    userName: p.user_name,
+    email: p.email,
+    phone: p.phone,
+    cep: p.cep,
+    uf: p.uf,
+    city: p.city,
+    address: p.address,
+    bio: p.bio,
+    category: p.category,
+    profissionalIdentification: p.profissional_identification,
+    services: p.services ? p.services.split(',').filter(s => !!s) : [],
+    price: p.price,
+    tags: p.tags,
+    onlyOnline: p.only_online,
+    onlyPresential: p.only_presential,
+    rating: p.rating,
+    numReviews: p.num_reviews,
+    imageUrl: p.image_url,
+    availableDaysOfWeek: p.available_days_of_week,
+    startHour: p.start_hour,
+    endHour: p.end_hour,
+    unavailableDates: rawUnavailable.map(d => ({
+      id: d.id,
+      profileId: d.profile_id,
+      date: d.date,
+      reason: d.reason,
+    })),
+  };
+};
+
+export const updateMyProfessionalProfile = async (
+  data: Partial<ProfessionalProfile>
+): Promise<ProfessionalProfile> => {
+  const response = await api.put<ProfessionalProfile>('/professionals/me', data);
+  return response.data;
+};
+
+export interface TimeSlot {
+  start_time: string;
+  end_time: string;
+}
+
+export interface AvailableSlotsResponse {
+  date: string;
+  available_slots: TimeSlot[];
+  unavailable_reason: string | null;
+}
+
+export const getAvailableSlots = async (
+  profileId: string | number,
+  targetDate: string,
+  durationMinutes: number = 60
+): Promise<AvailableSlotsResponse> => {
+  const response = await api.get<AvailableSlotsResponse>(
+    `/professionals/${profileId}/available-slots`,
+    {
+      params: {
+        target_date: targetDate,
+        duration_minutes: durationMinutes,
+      },
+    }
+  );
   return response.data;
 };
