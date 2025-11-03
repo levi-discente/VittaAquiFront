@@ -49,19 +49,28 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
     <Stack.Screen
       name="Profile"
       component={ProfileScreen}
-      options={{ title: "Perfil" }}
+      options={{
+        title: "Perfil",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen
       name="ConfigProfile"
       component={EditDoctorScheduler}
-      options={{ title: "Minhas Configurações" }}
+      options={{
+        title: "Minhas Configurações",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen
       name="EditDoctorScheduler"
       component={EditDoctorScheduler}
-      options={{ title: "Perfil do Profissional" }}
+      options={{
+        title: "Perfil do Profissional",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen

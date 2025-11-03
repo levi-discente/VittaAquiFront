@@ -66,6 +66,13 @@ export const cancelAppointment = async (id: number): Promise<Appointment> => {
   return response.data;
 };
 
+export const completeAppointment = async (id: number): Promise<Appointment> => {
+  const response = await api.put<Appointment>(`${BASE}/${id}`, {
+    status: 'completed',
+  });
+  return response.data;
+};
+
 export const getPatientAppointments = async (
   patientId: number
 ): Promise<Appointment[]> => {

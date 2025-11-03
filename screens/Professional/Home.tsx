@@ -412,39 +412,6 @@ const ProfessionalHomeScreen = () => {
               </View>
             }
           />
-
-          <GeneralInfoCard
-            title="Taxa de Satisfação"
-            body={
-              <>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    marginBottom: 4,
-                    color: Colors.blue20,
-                  }}
-                >
-                  {dashboardStats?.satisfactionRate || 0}%
-                </Text>
-                <Progress value={dashboardStats?.satisfactionRate || 0} />
-              </>
-            }
-            icon={
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  backgroundColor: "#ffe4e6",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="pulse" size={18} color="#e11d48" />
-              </View>
-            }
-          />
         </View>
 
         {/* Charts Section - Consultas Mensais */}

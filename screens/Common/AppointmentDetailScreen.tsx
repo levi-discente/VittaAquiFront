@@ -13,7 +13,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Appointment } from "@/types/appointment";
-import { confirmAppointment, cancelAppointment } from "@/api/appointment";
+import {
+  confirmAppointment,
+  cancelAppointment,
+  completeAppointment,
+} from "@/api/appointment";
+import { useAuth } from "@/hooks/useAuth";
 
 type AppointmentDetailRouteProp = RouteProp<
   { AppointmentDetail: { appointment: Appointment } },
@@ -24,23 +29,27 @@ const STATUS_COLORS: Record<string, [string, string]> = {
   pending: ["#f59e0b", "#d97706"],
   confirmed: ["#10b981", "#059669"],
   cancelled: ["#ef4444", "#dc2626"],
+  completed: ["#6366f1", "#4f46e5"],
 };
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendente",
   confirmed: "Confirmado",
   cancelled: "Cancelado",
+  completed: "Concluído",
 };
 
 const STATUS_ICONS: Record<string, string> = {
   pending: "time-outline",
   confirmed: "checkmark-circle-outline",
   cancelled: "close-circle-outline",
+  completed: "checkmark-done-circle-outline",
 };
 
 export default function AppointmentDetailScreen() {
   const route = useRoute<AppointmentDetailRouteProp>();
   const navigation = useNavigation();
+  const { user } = useAuth();
   const { appointment } = route.params;
 
   const dt = new Date(appointment.start_time);
@@ -62,6 +71,8 @@ export default function AppointmentDetailScreen() {
   const isCancelled = appointment.status === "cancelled";
   const isPending = appointment.status === "pending";
   const isConfirmed = appointment.status === "confirmed";
+  const isCompleted = appointment.status === "completed";
+  const isProfessional = user?.role === "professional";
 
   // Check if appointment is within time window for joining
   const now = new Date();
@@ -102,6 +113,32 @@ export default function AppointmentDetailScreen() {
     } catch (error) {
       console.error("Error cancelling appointment:", error);
       Alert.alert("Erro", "Não foi possível cancelar o agendamento.");
+    }
+  };
+
+  const handleCompleteAppointment = () => {
+    Alert.alert(
+      "Finalizar Consulta",
+      "Deseja marcar esta consulta como concluída?",
+      [
+        { text: "Não", style: "cancel" },
+        {
+          text: "Sim",
+          style: "default",
+          onPress: completeAppointmentAsync,
+        },
+      ]
+    );
+  };
+
+  const completeAppointmentAsync = async () => {
+    try {
+      await completeAppointment(appointment.id);
+      Alert.alert("Sucesso", "Consulta finalizada com sucesso!");
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error completing appointment:", error);
+      Alert.alert("Erro", "Não foi possível finalizar a consulta.");
     }
   };
 
@@ -242,10 +279,10 @@ export default function AppointmentDetailScreen() {
           )}
 
           {/* Actions */}
-          {!isCancelled && (
+          {!isCancelled && !isCompleted && (
             <View style={styles.actionsContainer}>
-              {/* Confirm Button - Only for pending appointments */}
-              {isPending && (
+              {/* Confirm Button - Only for pending appointments by professionals */}
+              {isPending && isProfessional && (
                 <TouchableOpacity
                   style={styles.confirmButton}
                   onPress={async () => {
@@ -285,6 +322,24 @@ export default function AppointmentDetailScreen() {
                   />
                   <Text style={styles.confirmButtonText}>
                     Confirmar Agendamento
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Complete Button - Only for confirmed appointments by professionals */}
+              {isConfirmed && isProfessional && (
+                <TouchableOpacity
+                  style={styles.completeButton}
+                  onPress={handleCompleteAppointment}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name="checkmark-done-circle-outline"
+                    size={20}
+                    color="#fff"
+                  />
+                  <Text style={styles.completeButtonText}>
+                    Finalizar Consulta
                   </Text>
                 </TouchableOpacity>
               )}
@@ -492,6 +547,25 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   confirmButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  completeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#6366f1",
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+    elevation: 2,
+    shadowColor: "#6366f1",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  completeButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
