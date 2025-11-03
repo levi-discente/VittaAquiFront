@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'patient' | 'professional';
+  role: "patient" | "professional";
 
   cpf: string;
   phone?: string;
@@ -12,6 +12,7 @@ export interface User {
   address?: string;
 
   professional_profile?: ProfessionalProfile;
+  user_id?: number;
 }
 
 export interface UpdateUserData {
@@ -25,4 +26,3 @@ export interface UpdateUserData {
   city?: string;
   address?: string;
 }
-

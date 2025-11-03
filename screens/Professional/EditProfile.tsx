@@ -75,7 +75,7 @@ const EditProfileScreen = () => {
             cep: values.cep,
             start_hour: values.startHour.trim(),
             end_hour: values.endHour.trim(),
-            available_days_of_week: values.availableDaysOfWeek || [],
+            available_days_of_week: (values.availableDaysOfWeek || []).join(','),
             unavailable_dates: (values.unavailableDates || []).map(d => ({
               date: d.date,
               reason: d.reason || 'Indisponível'

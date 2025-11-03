@@ -8,6 +8,9 @@ import { AvatarMenu } from "@/components/ui/AvatarMenu";
 import EditProfileScreen from "@/screens/Professional/EditProfile";
 import EditDoctorScheduler from "@/screens/Professional/EditDoctorScheduler";
 import AllPatientsScreen from "@/screens/Professional/AllPatientsScreen";
+import AppointmentDetailScreen from "@/screens/Common/AppointmentDetailScreen";
+import PatientHistoryScreen from "@/screens/Professional/PatientHistoryScreen";
+import { Appointment } from "@/types/appointment";
 
 export type ProfessionalStackParamList = {
   Home: undefined;
@@ -16,6 +19,8 @@ export type ProfessionalStackParamList = {
   ConfigProfile: undefined;
   EditDoctorScheduler: undefined;
   AllPatients: undefined;
+  AppointmentDetail: { appointment: Appointment };
+  PatientHistory: { patientId: number; patientName: string };
 };
 
 const Stack = createNativeStackNavigator<ProfessionalStackParamList>();
@@ -64,6 +69,22 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       component={AllPatientsScreen}
       options={{
         title: "",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="AppointmentDetail"
+      component={AppointmentDetailScreen}
+      options={{
+        title: "Detalhes do Agendamento",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="PatientHistory"
+      component={PatientHistoryScreen}
+      options={{
+        title: "Histórico do Paciente",
         headerRight: () => <AvatarMenu />,
       }}
     />

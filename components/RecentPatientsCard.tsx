@@ -25,11 +25,13 @@ type Patient = {
 type Props = {
   recentPatients: Patient[];
   onViewAll?: () => void;
+  onPatientPress?: (patientId: string | number, patientName: string) => void;
 };
 
 export const RecentPatientsCard: React.FC<Props> = ({
   recentPatients,
   onViewAll,
+  onPatientPress,
 }) => {
   const tableHead = [
     "Paciente",
@@ -43,9 +45,11 @@ export const RecentPatientsCard: React.FC<Props> = ({
 
   const renderCustomRow = (patient: Patient, index: number) => {
     return (
-      <View
+      <TouchableOpacity
         key={patient.id}
         style={[styles.customRow, index % 2 === 1 && styles.customRowAlt]}
+        onPress={() => onPatientPress?.(patient.id, patient.nome)}
+        activeOpacity={0.7}
       >
         {/* Paciente com Avatar */}
         <View style={[styles.cell, { width: columnWidths[0] }]}>
@@ -84,7 +88,10 @@ export const RecentPatientsCard: React.FC<Props> = ({
         {/* Ações */}
         <View style={[styles.cell, { width: columnWidths[4] }]}>
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => onPatientPress?.(patient.id, patient.nome)}
+            >
               <Ionicons
                 name="document-text-outline"
                 size={16}
@@ -96,7 +103,7 @@ export const RecentPatientsCard: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 

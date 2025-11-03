@@ -287,6 +287,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#4338ca",
     elevation: 2,
   },
+  saveButtonDisabled: {
+    backgroundColor: "#9ca3af",
+    opacity: 0.7,
+  },
   saveButtonContent: {
     flexDirection: "row",
     alignItems: "center",
