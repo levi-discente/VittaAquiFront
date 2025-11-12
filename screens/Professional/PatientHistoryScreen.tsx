@@ -14,9 +14,17 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { Appointment } from "@/types/appointment";
 import { getPatientAppointments } from "@/api/appointment";
+import { AvatarMenu } from "@/components/ui/AvatarMenu";
+import { Avatar } from "@/components/ui/Avatar";
 
 type PatientHistoryRouteProp = RouteProp<
-  { PatientHistory: { patientId: number; patientName: string } },
+  {
+    PatientHistory: {
+      patientId: number;
+      patientName: string;
+      patientImageUrl?: string;
+    };
+  },
   "PatientHistory"
 >;
 
@@ -37,7 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
 export default function PatientHistoryScreen() {
   const route = useRoute<PatientHistoryRouteProp>();
   const navigation = useNavigation();
-  const { patientId, patientName } = route.params;
+  const { patientId, patientName, patientImageUrl } = route.params;
 
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +130,7 @@ export default function PatientHistoryScreen() {
     <View style={styles.container}>
       {/* Header */}
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -141,7 +149,7 @@ export default function PatientHistoryScreen() {
         >
           <View style={styles.headerContent}>
             <View style={styles.patientIconContainer}>
-              <Ionicons name="person" size={48} color="#fff" />
+              <Avatar imageUrl={patientImageUrl} size={48} />
             </View>
             <Text style={styles.headerTitle}>{patientName}</Text>
             <Text style={styles.headerSubtitle}>Histórico de Consultas</Text>

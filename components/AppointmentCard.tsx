@@ -10,6 +10,7 @@ import {
 import { Card, Text, Colors, Button } from "react-native-ui-lib";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { Appointment } from "@/types/appointment";
+import { AvatarMenu } from "./ui/AvatarMenu";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 400);
@@ -40,7 +41,7 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   onCancel,
   onJoinMeeting,
 }) => {
-  const { professional_name, patient_name, start_time, status } = appointment;
+  const { professional_name, patient_name, start_time, status, patient_image_url, professional_image_url } = appointment;
   const dt = new Date(start_time);
   const dateStr = dt.toLocaleDateString("pt-BR");
   const timeStr = dt.toLocaleTimeString("pt-BR", {
@@ -96,7 +97,11 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         {/* Header with Icon */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Ionicons name="person-circle-outline" size={48} color="#4f46e5" />
+            <AvatarMenu 
+              imageUrl={
+                professional_name ? professional_image_url : patient_image_url
+              } 
+            />
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.name}>
@@ -104,7 +109,9 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             </Text>
             {professional_name && patient_name && (
               <Text style={styles.subtitle}>
-                {professional_name ? `Paciente: ${patient_name}` : `Profissional: ${professional_name}`}
+                {professional_name
+                  ? `Paciente: ${patient_name}`
+                  : `Profissional: ${professional_name}`}
               </Text>
             )}
             <View style={styles.dateTimeContainer}>

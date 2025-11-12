@@ -1,42 +1,14 @@
 import api from "./api";
+import type {
+  Review,
+  ReviewCreate,
+  ReviewUpdate,
+  ReviewList,
+  ReviewStats,
+  ReviewSummary,
+} from "../types/review";
 
 const BASE = "/reviews";
-
-export interface Review {
-  id: number;
-  appointment_id: number;
-  patient_id: number;
-  professional_id: number;
-  rating: number;
-  comment: string | null;
-  is_anonymous: boolean;
-  patient_name?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ReviewCreate {
-  appointment_id: number;
-  rating: number;
-  comment?: string;
-  is_anonymous?: boolean;
-}
-
-export interface ReviewUpdate {
-  rating?: number;
-  comment?: string;
-}
-
-export interface ReviewList {
-  total: number;
-  items: Review[];
-}
-
-export interface ReviewStats {
-  average_rating: number;
-  total_reviews: number;
-  distribution: Record<string, number>;
-}
 
 // Create a review for a completed appointment
 export const createReview = async (data: ReviewCreate): Promise<Review> => {

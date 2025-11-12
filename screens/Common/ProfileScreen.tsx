@@ -8,15 +8,20 @@ import {
   useWindowDimensions,
   ActivityIndicator,
   KeyboardAvoidingView,
+  TouchableOpacity,
+  Image,
 } from "react-native";
 import { Text, Button, Colors, Card, TextField } from "react-native-ui-lib";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { Avatar } from "@/components/ui/Avatar";
 import { Formik } from "formik";
 import * as Yup from "yup";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "@/hooks/useAuth";
 import { useUser } from "@/hooks/useUser";
 import { Snackbar } from "@/components/Snackbar";
 import { AppSelect, Option } from "@/components/ui/AppSelect";
+import { uploadProfileImage } from "@/api/user";
 import {
   maskCPF,
   maskCEP,
@@ -77,7 +82,7 @@ const ProfileSchema = Yup.object().shape({
 
 const ProfileScreen: React.FC = () => {
   const { signOut } = useAuth();
-  const { user, loading, updateUser } = useUser();
+  const { user, loading, updateUser, refresh } = useUser();
   const [editing, setEditing] = useState(false);
   const [snack, setSnack] = useState({
     visible: false,
@@ -85,6 +90,7 @@ const ProfileScreen: React.FC = () => {
     type: "success" as "success" | "error",
   });
   const [addrLoading, setAddrLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const { width } = useWindowDimensions();
   const navigation = useNavigation<NavigationProp>();
   const isWide = width >= 600;
@@ -163,6 +169,40 @@ const ProfileScreen: React.FC = () => {
     }
   };
 
+  const pickImage = async () => {
+    try {
+      const permissionResult =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (!permissionResult.granted) {
+        showSnack("Permissão para acessar galeria negada", "error");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploadingImage(true);
+        try {
+          await uploadProfileImage(result.assets[0].uri);
+          await refresh();
+          showSnack("Foto de perfil atualizada!", "success");
+        } catch (err: any) {
+          showSnack(err.message || "Erro ao fazer upload da imagem", "error");
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+    } catch (err: any) {
+      showSnack("Erro ao selecionar imagem", "error");
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -177,19 +217,16 @@ const ProfileScreen: React.FC = () => {
           {/* HEADER */}
           <View style={[styles.header, isWide && styles.headerWide]}>
             <View style={styles.avatarContainer}>
-              {user.image ? (
-                <Ionicons
-                  name="person-circle"
-                  size={isWide ? 140 : 120}
-                  color={Colors.white}
-                />
-              ) : (
-                <Ionicons
-                  name="person-circle"
-                  size={isWide ? 140 : 120}
-                  color={Colors.white}
-                />
-              )}
+              <Avatar
+                imageUrl={user.profile_image_url}
+                size={isWide ? 140 : 120}
+                onPress={pickImage}
+                showCamera={true}
+                loading={uploadingImage}
+                disabled={uploadingImage}
+                borderColor={Colors.white}
+                borderWidth={4}
+              />
             </View>
             <View
               style={[
@@ -200,9 +237,16 @@ const ProfileScreen: React.FC = () => {
               <Text text40 white>
                 {user.name}
               </Text>
-              <Text text90 white>
+              <Text text80 white>
                 {user.email}
               </Text>
+              {user.role && (
+                <View style={styles.roleBadge}>
+                  <Text text90 style={styles.roleText}>
+                    {user.role === 'professional' ? 'Profissional' : 'Cliente'}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -469,21 +513,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
-    backgroundColor: Colors.blue30,
-    borderRadius: 8,
-    padding: 24,
+    backgroundColor: '#667eea',
+    borderRadius: 16,
+    padding: 32,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   headerWide: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 40,
   },
   avatarContainer: {
-    marginBottom: 12,
+    marginBottom: 16,
+    position: "relative",
   },
   headerText: {
     alignItems: "center",
+  },
+  roleBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 8,
+  },
+  roleText: {
+    color: Colors.white,
+    fontWeight: '600',
   },
   content: {
     flex: 1,

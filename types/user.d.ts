@@ -10,6 +10,7 @@ export interface User {
   uf?: string;
   city?: string;
   address?: string;
+  profile_image_url?: string;
 
   professional_profile?: ProfessionalProfile;
   user_id?: number;
@@ -25,4 +26,5 @@ export interface UpdateUserData {
   uf?: string;
   city?: string;
   address?: string;
+  profile_image_url?: string;
 }

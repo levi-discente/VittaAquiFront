@@ -24,3 +24,27 @@ export const listUsers = async (skip: number = 0, limit: number = 100): Promise<
   const response = await api.get<User[]>('/users/', { params: { skip, limit } });
   return response.data;
 };
+
+export const uploadProfileImage = async (imageUri: string): Promise<User> => {
+  const formData = new FormData();
+  
+  // Extract filename from URI
+  const filename = imageUri.split('/').pop() || 'profile.jpg';
+  
+  // Create file object for upload
+  const file = {
+    uri: imageUri,
+    type: 'image/jpeg',
+    name: filename,
+  } as any;
+  
+  formData.append('file', file);
+  
+  const response = await api.post<User>('/users/me/profile-image', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  
+  return response.data;
+};

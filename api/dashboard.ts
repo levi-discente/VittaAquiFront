@@ -28,6 +28,7 @@ export interface PatientSummary {
   proximaConsulta: string;
   status: "Ativo" | "Pendente" | "Inativo";
   prioridade: "Alta" | "Média" | "Baixa";
+  profile_image_url?: string;
 }
 
 /**
@@ -287,6 +288,7 @@ export const getRecentPatients = async (
           new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now as placeholder
         status,
         prioridade,
+        profile_image_url: lastAppointment?.patient_image_url,
       });
     });
 

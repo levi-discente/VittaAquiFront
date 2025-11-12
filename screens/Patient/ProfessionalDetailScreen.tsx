@@ -18,6 +18,7 @@ import {
 import * as Clipboard from "expo-clipboard";
 import { Text, Colors, Card, Button } from "react-native-ui-lib";
 import Ionicons from "react-native-vector-icons/Ionicons";
+import { Avatar } from "@/components/ui/Avatar";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { ProfileStackParamList } from "@/navigation/ProfileStack";
 import { useProfessionalProfile } from "@/hooks/useProfessionals";
@@ -48,6 +49,7 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { profileId } = route.params;
   const { profile, loading, error, refresh } =
     useProfessionalProfile(profileId);
+  console.log(profile);
   const { user } = useAuth();
 
   const [bookingVisible, setBookingVisible] = useState(false);
@@ -59,8 +61,12 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [newReviewRating, setNewReviewRating] = useState(5);
   const [newReviewComment, setNewReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [completedAppointments, setCompletedAppointments] = useState<Appointment[]>([]);
-  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
+  const [completedAppointments, setCompletedAppointments] = useState<
+    Appointment[]
+  >([]);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<
+    number | null
+  >(null);
 
   const servicesList: string[] = profile?.services
     ? Array.isArray(profile.services)
@@ -147,10 +153,7 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     if (!selectedAppointmentId) {
-      Alert.alert(
-        "Erro",
-        "Por favor, selecione uma consulta para avaliar."
-      );
+      Alert.alert("Erro", "Por favor, selecione uma consulta para avaliar.");
       return;
     }
 
@@ -232,15 +235,12 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       >
         {/* HERO */}
         <View style={[styles.hero, { width: CONTENT_WIDTH }]}>
-          {profile.imageUrl ? (
-            <Image source={{ uri: profile.imageUrl }} style={styles.avatar} />
-          ) : (
-            <Ionicons
-              name="person-circle"
-              size={100}
-              color={Colors.$backgroundDark}
-            />
-          )}
+          <Avatar
+            imageUrl={profile.imageUrl}
+            size={100}
+            borderColor={Colors.blue30}
+            borderWidth={3}
+          />
           <View style={styles.heroInfo}>
             <Text text35m>{profile.userName}</Text>
             <Text text90 grey40 style={styles.heroSub}>
@@ -527,9 +527,18 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
             {completedAppointments.length === 0 ? (
               <View style={{ paddingVertical: 20, alignItems: "center" }}>
-                <Ionicons name="calendar-outline" size={48} color={Colors.grey50} />
-                <Text text80 grey40 style={{ marginTop: 12, textAlign: "center" }}>
-                  Você precisa ter uma consulta concluída com este profissional para avaliá-lo.
+                <Ionicons
+                  name="calendar-outline"
+                  size={48}
+                  color={Colors.grey50}
+                />
+                <Text
+                  text80
+                  grey40
+                  style={{ marginTop: 12, textAlign: "center" }}
+                >
+                  Você precisa ter uma consulta concluída com este profissional
+                  para avaliá-lo.
                 </Text>
               </View>
             ) : (
@@ -546,17 +555,28 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                           key={apt.id}
                           style={[
                             styles.appointmentOption,
-                            selectedAppointmentId === apt.id && styles.appointmentOptionSelected,
+                            selectedAppointmentId === apt.id &&
+                              styles.appointmentOptionSelected,
                           ]}
                           onPress={() => setSelectedAppointmentId(apt.id)}
                         >
                           <Ionicons
-                            name={selectedAppointmentId === apt.id ? "radio-button-on" : "radio-button-off"}
+                            name={
+                              selectedAppointmentId === apt.id
+                                ? "radio-button-on"
+                                : "radio-button-off"
+                            }
                             size={20}
-                            color={selectedAppointmentId === apt.id ? Colors.blue30 : Colors.grey50}
+                            color={
+                              selectedAppointmentId === apt.id
+                                ? Colors.blue30
+                                : Colors.grey50
+                            }
                           />
                           <Text text90 style={{ marginLeft: 8 }}>
-                            {new Date(apt.start_time).toLocaleDateString("pt-BR")}
+                            {new Date(apt.start_time).toLocaleDateString(
+                              "pt-BR"
+                            )}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -564,49 +584,53 @@ const ProfessionalDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   </View>
                 )}
 
-            {/* Star Rating */}
-            <View style={styles.starContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity
-                  key={star}
-                  onPress={() => setNewReviewRating(star)}
+                {/* Star Rating */}
+                <View style={styles.starContainer}>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <TouchableOpacity
+                      key={star}
+                      onPress={() => setNewReviewRating(star)}
+                    >
+                      <Ionicons
+                        name={star <= newReviewRating ? "star" : "star-outline"}
+                        size={32}
+                        color={Colors.yellow30}
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Comment Input */}
+                <TextInput
+                  style={styles.commentInput}
+                  placeholder="Escreva seu comentário..."
+                  placeholderTextColor={Colors.grey50}
+                  multiline
+                  numberOfLines={4}
+                  value={newReviewComment}
+                  onChangeText={setNewReviewComment}
+                  maxLength={2000}
+                />
+
+                <Text
+                  text100
+                  grey50
+                  style={{ alignSelf: "flex-end", marginTop: 4 }}
                 >
-                  <Ionicons
-                    name={star <= newReviewRating ? "star" : "star-outline"}
-                    size={32}
-                    color={Colors.yellow30}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
+                  {newReviewComment.length}/2000
+                </Text>
 
-            {/* Comment Input */}
-            <TextInput
-              style={styles.commentInput}
-              placeholder="Escreva seu comentário..."
-              placeholderTextColor={Colors.grey50}
-              multiline
-              numberOfLines={4}
-              value={newReviewComment}
-              onChangeText={setNewReviewComment}
-              maxLength={2000}
-            />
-
-            <Text
-              text100
-              grey50
-              style={{ alignSelf: "flex-end", marginTop: 4 }}
-            >
-              {newReviewComment.length}/2000
-            </Text>
-
-            {/* Submit Button */}
-            <Button
-              label={submittingReview ? "Enviando..." : "Enviar Avaliação"}
-              disabled={submittingReview || !newReviewComment.trim() || completedAppointments.length === 0}
-              onPress={handleSubmitReview}
-              style={styles.submitReviewBtn}
-            />
+                {/* Submit Button */}
+                <Button
+                  label={submittingReview ? "Enviando..." : "Enviar Avaliação"}
+                  disabled={
+                    submittingReview ||
+                    !newReviewComment.trim() ||
+                    completedAppointments.length === 0
+                  }
+                  onPress={handleSubmitReview}
+                  style={styles.submitReviewBtn}
+                />
               </>
             )}
           </View>

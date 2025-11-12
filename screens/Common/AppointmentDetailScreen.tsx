@@ -19,6 +19,8 @@ import {
   completeAppointment,
 } from "@/api/appointment";
 import { useAuth } from "@/hooks/useAuth";
+import { AvatarMenu } from "@/components/ui/AvatarMenu";
+import { Avatar } from "@/components/ui/Avatar";
 
 type AppointmentDetailRouteProp = RouteProp<
   { AppointmentDetail: { appointment: Appointment } },
@@ -179,31 +181,58 @@ export default function AppointmentDetailScreen() {
         <View style={styles.content}>
           {/* Professional Info Card */}
           {appointment.professional_name && (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.iconCircle}>
-                  <Ionicons name="medkit" size={24} color="#4f46e5" />
+            <View style={styles.professionalCard}>
+              <View style={styles.professionalCardGradient}>
+                <View style={styles.professionalCardHeader}>
+                  <View style={styles.professionalAvatarContainer}>
+                    <Ionicons name="medkit" size={32} color="#fff" />
+                  </View>
+                  <View style={styles.professionalCardContent}>
+                    <Text style={styles.professionalCardLabel}>
+                      Profissional
+                    </Text>
+                    <Text style={styles.professionalCardName}>
+                      {appointment.professional_name}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.cardTitle}>Profissional</Text>
+                <View style={styles.professionalCardDecoration}>
+                  <Ionicons
+                    name="medical"
+                    size={20}
+                    color="rgba(255,255,255,0.6)"
+                  />
+                </View>
               </View>
-              <Text style={styles.professionalName}>
-                {appointment.professional_name}
-              </Text>
             </View>
           )}
 
           {/* Patient Info Card */}
           {appointment.patient_name && (
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <View style={styles.iconCircle}>
-                  <Ionicons name="person" size={24} color="#4f46e5" />
+            <View style={styles.patientCard}>
+              <View style={styles.patientCardGradient}>
+                <View style={styles.patientCardHeader}>
+                  <View style={styles.patientAvatarContainer}>
+                    <Avatar
+                      imageUrl={appointment.patient_image_url}
+                      size={48}
+                    />
+                  </View>
+                  <View style={styles.patientCardContent}>
+                    <Text style={styles.patientCardLabel}>Paciente</Text>
+                    <Text style={styles.patientCardName}>
+                      {appointment.patient_name}
+                    </Text>
+                  </View>
                 </View>
-                <Text style={styles.cardTitle}>Paciente</Text>
+                <View style={styles.patientCardDecoration}>
+                  <Ionicons
+                    name="person-outline"
+                    size={20}
+                    color="rgba(255,255,255,0.6)"
+                  />
+                </View>
               </View>
-              <Text style={styles.professionalName}>
-                {appointment.patient_name}
-              </Text>
             </View>
           )}
 
@@ -428,7 +457,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
-    marginTop: -20,
   },
   card: {
     backgroundColor: "#fff",
@@ -466,6 +494,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "600",
     color: "#4f46e5",
+    textAlign: "center",
   },
   infoRow: {
     flexDirection: "row",
@@ -626,5 +655,115 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#6b7280",
     lineHeight: 20,
+  },
+  patientCard: {
+    marginBottom: 16,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    overflow: "hidden",
+  },
+  patientCardGradient: {
+    backgroundColor: "#667eea",
+    padding: 24,
+    position: "relative",
+  },
+  patientCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  patientAvatarContainer: {
+    marginRight: 16,
+  },
+  patientCardContent: {
+    flex: 1,
+  },
+  patientCardLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  patientCardName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+    lineHeight: 28,
+  },
+  patientCardDecoration: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
+  },
+  professionalCard: {
+    marginBottom: 16,
+    borderRadius: 20,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    overflow: "hidden",
+  },
+  professionalCardGradient: {
+    backgroundColor: "#10b981",
+    padding: 24,
+    position: "relative",
+  },
+  professionalCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  professionalAvatarContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  professionalCardContent: {
+    flex: 1,
+  },
+  professionalCardLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.8)",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  professionalCardName: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#fff",
+    lineHeight: 28,
+  },
+  professionalCardDecoration: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    backdropFilter: "blur(10px)",
   },
 });

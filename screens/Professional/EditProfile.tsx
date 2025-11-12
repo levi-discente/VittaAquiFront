@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Switch } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Switch, Image } from 'react-native';
 import { Colors, Card, Button } from 'react-native-ui-lib';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Avatar } from '@/components/ui/Avatar';
+import * as ImagePicker from 'expo-image-picker';
 import Snackbar from '@/components/Snackbar';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfessionalProfileByUserId } from '@/hooks/useProfessionals';
 import { isProfileIncomplete } from '@/utils/professional';
 import { updateProfessionalProfile } from '@/api/professional';
+import { uploadProfileImage } from '@/api/user';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -26,12 +29,46 @@ const EditProfileScreen = () => {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (profile && isProfileIncomplete(profile)) {
       Snackbar.show({ text: 'Por favor, complete seu perfil profissional', type: 'warning' });
     }
   }, [profile]);
+
+  const pickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (!permissionResult.granted) {
+        Snackbar.show({ text: 'Permissão para acessar galeria negada', type: 'error' });
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setUploadingImage(true);
+        try {
+          await uploadProfileImage(result.assets[0].uri);
+          await refresh();
+          Snackbar.show({ text: 'Foto de perfil atualizada!', type: 'success' });
+        } catch (err: any) {
+          Snackbar.show({ text: err.message || 'Erro ao fazer upload da imagem', type: 'error' });
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+    } catch (err: any) {
+      Snackbar.show({ text: 'Erro ao selecionar imagem', type: 'error' });
+    }
+  };
 
   if (loading) return <ActivityIndicator size="large" color={Colors.blue30} style={{ marginTop: 50 }} />;
   if (!profile) return <Text>Perfil não encontrado</Text>;
@@ -95,6 +132,24 @@ const EditProfileScreen = () => {
       >
         {({ handleChange, handleSubmit, values, setFieldValue, errors }) => (
           <View>
+
+            {/* ==== FOTO DE PERFIL ==== */}
+            <Card style={styles.card}>
+              <Text style={styles.label}>Foto de Perfil</Text>
+              <View style={styles.imagePickerContainer}>
+                <Avatar
+                  imageUrl={user?.profile_image_url}
+                  size={100}
+                  onPress={pickImage}
+                  showCamera={true}
+                  loading={uploadingImage}
+                  disabled={uploadingImage}
+                  borderColor={Colors.blue30}
+                  borderWidth={2}
+                />
+              </View>
+              <Text style={styles.hint}>Toque na imagem para alterar</Text>
+            </Card>
 
             {/* ==== CAMPOS FIXOS ==== */}
             <Card style={styles.card}><Text style={styles.label}>Nome</Text><Text>{profile.userName}</Text></Card>
@@ -195,6 +250,17 @@ const styles = StyleSheet.create({
   daysContainer: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
   dayChip: { borderWidth: 1, borderColor: Colors.grey50, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, margin: 4 },
   dayActive: { backgroundColor: Colors.blue30, borderColor: Colors.blue30 },
+  imagePickerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 12,
+  },
+  hint: {
+    fontSize: 12,
+    color: Colors.grey40,
+    textAlign: 'center',
+    marginTop: 4,
+  },
 });
 
 export default EditProfileScreen;

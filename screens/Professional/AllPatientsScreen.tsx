@@ -18,7 +18,7 @@ import { getAllPatients, PatientSummary } from "@/api/dashboard";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { ProfessionalStackParamList } from "@/navigation/ProfessionalStack";
-
+import { RouteProp } from "@react-navigation/native";
 
 type SortOrder = "asc" | "desc" | "none";
 
@@ -188,10 +188,11 @@ const AllPatientsScreen = () => {
 
             <RecentPatientsCard 
               recentPatients={filteredAndSortedPatients}
-              onPatientPress={(patientId, patientName) => {
+              onPatientPress={(patientId, patientName, patientImageUrl) => {
                 navigation.navigate("PatientHistory", {
                   patientId: Number(patientId),
                   patientName,
+                  patientImageUrl,
                 });
               }}
             />

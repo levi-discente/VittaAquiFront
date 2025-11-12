@@ -29,6 +29,7 @@ interface RawProfessional {
   rating: number;
   num_reviews: number;
   image_url?: string;
+  profile_image_url?: string; // User's profile image
   available_days_of_week: string; // CSV string from backend
   start_hour: string;
   end_hour: string;
@@ -70,7 +71,7 @@ export const getProfessionalProfileById = async (
     onlyPresential: p.only_presential,
     rating: p.rating,
     numReviews: p.num_reviews,
-    imageUrl: p.image_url,
+    imageUrl: p.image_url || p.profile_image_url,
 
     // mapeamento dos novos campos
     availableDaysOfWeek: p.available_days_of_week ? p.available_days_of_week.split(",").filter((d) => !!d.trim()) : [],
@@ -113,7 +114,7 @@ export const listProfessionals = async (
       onlyPresential: p.only_presential,
       rating: p.rating,
       numReviews: p.num_reviews,
-      imageUrl: p.image_url,
+      imageUrl: p.image_url || p.profile_image_url,
 
       // novos campos
       availableDaysOfWeek: p.available_days_of_week ? p.available_days_of_week.split(",").filter((d) => !!d.trim()) : [],
@@ -156,7 +157,7 @@ export const getProfessionalProfileByUserId = async (
     onlyPresential: p.only_presential,
     rating: p.rating,
     numReviews: p.num_reviews,
-    imageUrl: p.image_url,
+    imageUrl: p.image_url || p.profile_image_url,
 
     // mapeamento dos novos campos
     availableDaysOfWeek: p.available_days_of_week ? p.available_days_of_week.split(",").filter((d) => !!d.trim()) : [],
@@ -220,7 +221,7 @@ export const updateProfessionalProfile = async (
     onlyPresential: p.only_presential,
     rating: p.rating,
     numReviews: p.num_reviews,
-    imageUrl: p.image_url,
+    imageUrl: p.image_url || p.profile_image_url,
     availableDaysOfWeek: p.available_days_of_week ? p.available_days_of_week.split(",").filter((d) => !!d.trim()) : [],
     startHour: p.start_hour || "",
     endHour: p.end_hour || "",
@@ -258,7 +259,7 @@ export const getMyProfessionalProfile =
       onlyPresential: p.only_presential,
       rating: p.rating,
       numReviews: p.num_reviews,
-      imageUrl: p.image_url,
+      imageUrl: p.image_url || p.profile_image_url,
       availableDaysOfWeek: p.available_days_of_week ? p.available_days_of_week.split(",").filter((d) => !!d.trim()) : [],
       startHour: p.start_hour || "",
       endHour: p.end_hour || "",

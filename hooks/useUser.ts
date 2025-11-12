@@ -4,7 +4,7 @@ import { User } from '../types/user'
 import { useAuth } from './useAuth'
 
 export const useUser = () => {
-  const { user: authUser, initializing } = useAuth()
+  const { user: authUser, updateUser: updateAuthUser } = useAuth()
   const [user, setUser] = useState<User | null>(authUser)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,12 +19,13 @@ export const useUser = () => {
     try {
       const me = await getMe()
       setUser(me)
+      updateAuthUser(me) // Also update AuthContext
     } catch (err: any) {
       setError(err.response?.data?.error || err.message)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [updateAuthUser])
 
   const updateUser = useCallback(async (data: Partial<User>) => {
     setLoading(true)
@@ -32,6 +33,7 @@ export const useUser = () => {
     try {
       const updated = await updateMe(data)
       setUser(updated)
+      updateAuthUser(updated) // Also update AuthContext
       return updated
     } catch (err: any) {
       setError(err.response?.data?.error || err.message)
@@ -39,13 +41,13 @@ export const useUser = () => {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [updateAuthUser])
 
   useEffect(() => {
-    if (!initializing) {
+    if (!authUser?.id) {
       fetchUser()
     }
-  }, [initializing, fetchUser])
+  }, [authUser?.id, fetchUser])
 
   return { user, loading, error, refresh: fetchUser, updateUser }
 }
