@@ -1,18 +1,23 @@
-import React from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React from "react";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
-import { LogoTitle } from '@/components/ui/logo';
-import HomeScreen from '@/screens/Patient/Home';
-import AppointmentsScreen from '@/screens/Common/AppointmentsScreen';
-import ProfessionalDetailScreen from '@/screens/Patient/ProfessionalDetailScreen';
-import ProfileScreen from '@/screens/Common/ProfileScreen';
-import { AvatarMenu } from '@/components/ui/AvatarMenu';
+import { LogoTitle } from "@/components/ui/logo";
+import HomeScreen from "@/screens/Patient/Home";
+import AppointmentsScreen from "@/screens/Common/AppointmentsScreen";
+import ProfessionalDetailScreen from "@/screens/Patient/ProfessionalDetailScreen";
+import ProfileScreen from "@/screens/Common/ProfileScreen";
+import ChatScreen from "@/screens/Common/ChatScreen";
+import ConversationsScreen from "@/screens/Common/ConversationsScreen";
+import { AvatarMenu } from "@/components/ui/AvatarMenu";
+import { Appointment } from "@/types/appointment";
 
 export type ProfileStackParamList = {
   Home: undefined;
   Appointments: undefined;
   ProfessionalDetail: { profileId: string };
   Profile: undefined;
+  Chat: { appointment: Appointment };
+  Conversations: undefined;
 };
 
 const Stack = createNativeStackNavigator<ProfileStackParamList>();
@@ -27,7 +32,7 @@ const ProfileStack: React.FC<ProfileStackProps> = ({ initialScreen }) => (
       name="Home"
       component={HomeScreen}
       options={{
-        title: 'Início',
+        title: "Início",
         headerLeft: LogoTitle,
         headerRight: () => <AvatarMenu />,
       }}
@@ -37,7 +42,7 @@ const ProfileStack: React.FC<ProfileStackProps> = ({ initialScreen }) => (
       name="Appointments"
       component={AppointmentsScreen}
       options={{
-        title: 'Agenda',
+        title: "Agenda",
         headerLeft: LogoTitle,
         headerRight: () => <AvatarMenu />,
       }}
@@ -46,16 +51,27 @@ const ProfileStack: React.FC<ProfileStackProps> = ({ initialScreen }) => (
     <Stack.Screen
       name="ProfessionalDetail"
       component={ProfessionalDetailScreen}
-      options={{ title: 'Detalhes' }}
+      options={{ title: "Detalhes" }}
     />
 
     <Stack.Screen
       name="Profile"
       component={ProfileScreen}
-      options={{ title: 'Perfil' }}
+      options={{ title: "Perfil" }}
+    />
+
+    <Stack.Screen
+      name="Chat"
+      component={ChatScreen}
+      options={{ title: "Chat" }}
+    />
+
+    <Stack.Screen
+      name="Conversations"
+      component={ConversationsScreen}
+      options={{ title: "Conversas" }}
     />
   </Stack.Navigator>
 );
 
 export default ProfileStack;
-

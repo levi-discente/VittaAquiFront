@@ -144,14 +144,6 @@ export default function AppointmentDetailScreen() {
     }
   };
 
-  const handleReschedule = () => {
-    // TODO: Navigate to reschedule screen
-    Alert.alert(
-      "Em breve",
-      "Funcionalidade de reagendamento em desenvolvimento"
-    );
-  };
-
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -282,7 +274,7 @@ export default function AppointmentDetailScreen() {
           </View>
 
           {/* Join Meeting Button */}
-          {true && (
+          {appointment.status === "confirmed" && (
             <TouchableOpacity
               style={styles.joinMeetingButton}
               onPress={() => {
@@ -304,6 +296,20 @@ export default function AppointmentDetailScreen() {
             >
               <Ionicons name="videocam" size={24} color="#fff" />
               <Text style={styles.joinMeetingButtonText}>Entrar na sala</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Chat Button - Only for confirmed appointments */}
+          {appointment.status === "confirmed" && (
+            <TouchableOpacity
+              style={styles.chatButton}
+              onPress={() => {
+                (navigation as any).navigate("Chat", { appointment });
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="chatbubbles" size={24} color="#fff" />
+              <Text style={styles.chatButtonText}>Entrar no Chat</Text>
             </TouchableOpacity>
           )}
 
@@ -372,16 +378,6 @@ export default function AppointmentDetailScreen() {
                   </Text>
                 </TouchableOpacity>
               )}
-
-              <TouchableOpacity
-                style={styles.rescheduleButton}
-                onPress={handleReschedule}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="calendar-outline" size={20} color="#fff" />
-                <Text style={styles.rescheduleButtonText}>Reagendar</Text>
-              </TouchableOpacity>
-
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={handleCancelAppointment}
@@ -544,8 +540,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 10,
     marginTop: 8,
-    marginBottom: 16,
-    elevation: 4,
+    marginBottom: 8,
     shadowColor: "#10b981",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.4,
@@ -555,10 +550,32 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "700",
+    marginLeft: 12,
+  },
+  chatButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#6366f1",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    gap: 8,
+
+    borderRadius: 16,
+    shadowColor: "#6366f1",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+  },
+  chatButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 12,
   },
   actionsContainer: {
     marginTop: 8,
-    marginBottom: 16,
+    marginBottom: 8,
     gap: 12,
   },
   confirmButton: {

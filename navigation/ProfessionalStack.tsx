@@ -9,6 +9,8 @@ import EditProfileScreen from "@/screens/Professional/EditProfile";
 import EditDoctorScheduler from "@/screens/Professional/EditDoctorScheduler";
 import AllPatientsScreen from "@/screens/Professional/AllPatientsScreen";
 import AppointmentDetailScreen from "@/screens/Common/AppointmentDetailScreen";
+import ChatScreen from "@/screens/Common/ChatScreen";
+import ConversationsScreen from "@/screens/Common/ConversationsScreen";
 import PatientHistoryScreen from "@/screens/Professional/PatientHistoryScreen";
 import { Appointment } from "@/types/appointment";
 
@@ -20,6 +22,8 @@ export type ProfessionalStackParamList = {
   EditDoctorScheduler: undefined;
   AllPatients: undefined;
   AppointmentDetail: { appointment: Appointment };
+  Chat: { appointment: Appointment };
+  Conversations: undefined;
   PatientHistory: { patientId: number; patientName: string };
 };
 
@@ -86,6 +90,22 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       component={AppointmentDetailScreen}
       options={{
         title: "Detalhes do Agendamento",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="Chat"
+      component={ChatScreen}
+      options={{
+        title: "Chat",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="Conversations"
+      component={ConversationsScreen}
+      options={{
+        title: "Conversas",
         headerRight: () => <AvatarMenu />,
       }}
     />

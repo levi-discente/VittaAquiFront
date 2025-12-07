@@ -6,6 +6,7 @@ import ProfessionalStack from "./ProfessionalStack";
 export type ProfessionalTabParamList = {
   HomeTab: undefined;
   AppointmentsTab: undefined;
+  ConversationsTab: undefined;
   ProfissionalProfile: undefined;
 };
 
@@ -21,6 +22,7 @@ const ProfessionalTabNavigator: React.FC = () => (
         const icons: Record<keyof ProfessionalTabParamList, FontAwesomeName> = {
           HomeTab: "home",
           AppointmentsTab: "calendar",
+          ConversationsTab: "comments",
           ProfissionalProfile: "user",
         };
         return (
@@ -34,6 +36,9 @@ const ProfessionalTabNavigator: React.FC = () => (
     </Tab.Screen>
     <Tab.Screen name="AppointmentsTab" options={{ title: "Agendamentos" }}>
       {() => <ProfessionalStack initialScreen="Appointments" />}
+    </Tab.Screen>
+    <Tab.Screen name="ConversationsTab" options={{ title: "Conversas" }}>
+      {() => <ProfessionalStack initialScreen="Conversations" />}
     </Tab.Screen>
     <Tab.Screen name="ProfissionalProfile" options={{ title: "Perfil" }}>
       {() => <ProfessionalStack initialScreen="EditDoctorScheduler" />}

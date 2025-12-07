@@ -1,8 +1,10 @@
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const IP_ADRESS = "192.168.1.14";
-const BASE_URL = `http://${IP_ADRESS}:8000/api`;
+const IP_ADRESS = "https://vittaaqui.onrender.com";
+// const IP_ADRESS = "http://192.168.1.14:3001";
+
+const BASE_URL = `${IP_ADRESS}/api`;
 
 const api = axios.create({
   baseURL: BASE_URL,

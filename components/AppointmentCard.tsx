@@ -37,11 +37,17 @@ const STATUS_LABELS: Record<string, string> = {
 export const AppointmentCard: React.FC<AppointmentCardProps> = ({
   appointment,
   onPress,
-  onEdit,
   onCancel,
   onJoinMeeting,
 }) => {
-  const { professional_name, patient_name, start_time, status, patient_image_url, professional_image_url } = appointment;
+  const {
+    professional_name,
+    patient_name,
+    start_time,
+    status,
+    patient_image_url,
+    professional_image_url,
+  } = appointment;
   const dt = new Date(start_time);
   const dateStr = dt.toLocaleDateString("pt-BR");
   const timeStr = dt.toLocaleTimeString("pt-BR", {
@@ -97,10 +103,10 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         {/* Header with Icon */}
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <AvatarMenu 
+            <AvatarMenu
               imageUrl={
                 professional_name ? professional_image_url : patient_image_url
-              } 
+              }
             />
           </View>
           <View style={styles.headerInfo}>
@@ -153,12 +159,12 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
         {!isCancelled && (
           <View style={styles.actions}>
             <TouchableOpacity
-              onPress={onEdit}
+              onPress={onPress}
               style={styles.actionButton}
               activeOpacity={0.7}
             >
               <Ionicons name="create-outline" size={18} color="#4f46e5" />
-              <Text style={styles.actionButtonText}>Alterar data</Text>
+              <Text style={styles.actionButtonText}>Ver detalhes</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleCancelPress}

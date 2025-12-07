@@ -238,11 +238,6 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
                   appointment: item,
                 })
               }
-              onEdit={() => {
-                if (item.status !== "cancelled") {
-                  setEditingAppointment(item);
-                }
-              }}
               onCancel={() => handleCancel(item)}
               onJoinMeeting={() => {
                 // TODO: Navigate to video call screen or open meeting URL
