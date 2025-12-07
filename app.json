@@ -10,7 +10,8 @@
     "newArchEnabled": true,
     "jsEngine": "hermes",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.matheusvinicius8.VittaAqui-frontend"
     },
     "android": {
       "adaptiveIcon": {
@@ -18,22 +19,19 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "jsEngine": "hermes"
+      "jsEngine": "hermes",
+      "package": "com.matheusvinicius8.VittaAqui_frontend"
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/images/favicon.png",
-      "build": {
-        "babel": {
-          "include": [
-            "@ui-kitten/components"
-          ]
-        }
-      }
+      "favicon": "./assets/images/favicon.png"
     },
-    "plugins": [
-      "expo-web-browser",
-      "expo-router"
-    ]
+    "plugins": ["expo-web-browser", "expo-router"],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd69537c-e5a4-41d2-a842-fe8f59296715"
+      }
+    }
   }
 }

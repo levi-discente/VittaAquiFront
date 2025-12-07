@@ -10,6 +10,8 @@ import { Table, Row } from "react-native-table-component";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { AvatarMenu } from "./ui/AvatarMenu";
+import { Avatar } from "./ui/Avatar";
 
 type Patient = {
   id: string | number;
@@ -20,16 +22,19 @@ type Patient = {
   proximaConsulta: string;
   status?: "Ativo" | "Inativo" | "Pendente";
   prioridade?: "Alta" | "Média" | "Baixa";
+  profile_image_url: string;
 };
 
 type Props = {
   recentPatients: Patient[];
   onViewAll?: () => void;
+  onPatientPress?: (patientId: string | number, patientName: string, patientImageUrl?: string) => void;
 };
 
 export const RecentPatientsCard: React.FC<Props> = ({
   recentPatients,
   onViewAll,
+  onPatientPress,
 }) => {
   const tableHead = [
     "Paciente",
@@ -42,10 +47,13 @@ export const RecentPatientsCard: React.FC<Props> = ({
   const columnWidths = [150, 80, 120, 120, 100];
 
   const renderCustomRow = (patient: Patient, index: number) => {
+    console.log(patient);
     return (
-      <View
+      <TouchableOpacity
         key={patient.id}
         style={[styles.customRow, index % 2 === 1 && styles.customRowAlt]}
+        onPress={() => onPatientPress?.(patient.id, patient.nome, patient.profile_image_url)}
+        activeOpacity={0.7}
       >
         {/* Paciente com Avatar */}
         <View style={[styles.cell, { width: columnWidths[0] }]}>
@@ -56,7 +64,7 @@ export const RecentPatientsCard: React.FC<Props> = ({
               end={{ x: 1, y: 1 }}
               style={styles.avatar}
             >
-              <Text style={styles.avatarText}>{patient.avatar}</Text>
+              <Avatar imageUrl={patient.profile_image_url} size={28} />
             </LinearGradient>
             <Text style={styles.patientName}>{patient.nome}</Text>
           </View>
@@ -84,7 +92,10 @@ export const RecentPatientsCard: React.FC<Props> = ({
         {/* Ações */}
         <View style={[styles.cell, { width: columnWidths[4] }]}>
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => onPatientPress?.(patient.id, patient.nome, patient.profile_image_url)}
+            >
               <Ionicons
                 name="document-text-outline"
                 size={16}
@@ -96,7 +107,7 @@ export const RecentPatientsCard: React.FC<Props> = ({
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -112,7 +123,7 @@ export const RecentPatientsCard: React.FC<Props> = ({
               end={{ x: 1, y: 1 }}
               style={styles.headerIconContainer}
             >
-              <MaterialIcons name="people" size={16} color="#fff" />
+              <Ionicons name="people" size={16} color="#fff" />
             </LinearGradient>
             <Text style={styles.headerTitle}>Pacientes Recentes</Text>
           </View>

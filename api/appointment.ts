@@ -51,3 +51,33 @@ export const getProfessionalAppointments = async (
   );
   return response.data;
 };
+
+export const confirmAppointment = async (id: number): Promise<Appointment> => {
+  const response = await api.put<Appointment>(`${BASE}/${id}`, {
+    status: 'confirmed',
+  });
+  return response.data;
+};
+
+export const cancelAppointment = async (id: number): Promise<Appointment> => {
+  const response = await api.put<Appointment>(`${BASE}/${id}`, {
+    status: 'cancelled',
+  });
+  return response.data;
+};
+
+export const completeAppointment = async (id: number): Promise<Appointment> => {
+  const response = await api.put<Appointment>(`${BASE}/${id}`, {
+    status: 'completed',
+  });
+  return response.data;
+};
+
+export const getPatientAppointments = async (
+  patientId: number
+): Promise<Appointment[]> => {
+  // This will get appointments for a specific patient
+  // For now, we'll use the my-appointments endpoint filtered by patient
+  const response = await api.get<Appointment[]>(`${BASE}/my-appointments`);
+  return response.data.filter((apt) => apt.patient_id === patientId);
+};

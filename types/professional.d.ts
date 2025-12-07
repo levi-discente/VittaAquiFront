@@ -1,3 +1,5 @@
+import { ReviewSummary } from "./review";
+
 export interface UnavailableDate {
   id: number;
   profileId: number;
@@ -30,6 +32,7 @@ export interface ProfessionalProfile {
   startHour: string;
   endHour: string;
   unavailableDates: UnavailableDate[];
+  reviews?: ReviewSummary[];
 }
 
 export interface ProfessionalFilter {

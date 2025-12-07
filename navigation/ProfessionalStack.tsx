@@ -8,6 +8,11 @@ import { AvatarMenu } from "@/components/ui/AvatarMenu";
 import EditProfileScreen from "@/screens/Professional/EditProfile";
 import EditDoctorScheduler from "@/screens/Professional/EditDoctorScheduler";
 import AllPatientsScreen from "@/screens/Professional/AllPatientsScreen";
+import AppointmentDetailScreen from "@/screens/Common/AppointmentDetailScreen";
+import ChatScreen from "@/screens/Common/ChatScreen";
+import ConversationsScreen from "@/screens/Common/ConversationsScreen";
+import PatientHistoryScreen from "@/screens/Professional/PatientHistoryScreen";
+import { Appointment } from "@/types/appointment";
 
 export type ProfessionalStackParamList = {
   Home: undefined;
@@ -16,6 +21,10 @@ export type ProfessionalStackParamList = {
   ConfigProfile: undefined;
   EditDoctorScheduler: undefined;
   AllPatients: undefined;
+  AppointmentDetail: { appointment: Appointment };
+  Chat: { appointment: Appointment };
+  Conversations: undefined;
+  PatientHistory: { patientId: number; patientName: string };
 };
 
 const Stack = createNativeStackNavigator<ProfessionalStackParamList>();
@@ -44,19 +53,28 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
     <Stack.Screen
       name="Profile"
       component={ProfileScreen}
-      options={{ title: "Perfil" }}
+      options={{
+        title: "Perfil",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen
       name="ConfigProfile"
       component={EditDoctorScheduler}
-      options={{ title: "Minhas Configurações" }}
+      options={{
+        title: "Minhas Configurações",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen
       name="EditDoctorScheduler"
       component={EditDoctorScheduler}
-      options={{ title: "Perfil do Profissional" }}
+      options={{
+        title: "Perfil do Profissional",
+        headerRight: () => <AvatarMenu />,
+      }}
     />
 
     <Stack.Screen
@@ -64,6 +82,38 @@ const ProfessionalStack: React.FC<Props> = ({ initialScreen }) => (
       component={AllPatientsScreen}
       options={{
         title: "",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="AppointmentDetail"
+      component={AppointmentDetailScreen}
+      options={{
+        title: "Detalhes do Agendamento",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="Chat"
+      component={ChatScreen}
+      options={{
+        title: "Chat",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="Conversations"
+      component={ConversationsScreen}
+      options={{
+        title: "Conversas",
+        headerRight: () => <AvatarMenu />,
+      }}
+    />
+    <Stack.Screen
+      name="PatientHistory"
+      component={PatientHistoryScreen}
+      options={{
+        title: "Histórico do Paciente",
         headerRight: () => <AvatarMenu />,
       }}
     />

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   Switch,
   TextInput,
   Pressable,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
+import { useNavigation } from "@react-navigation/native";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
@@ -16,6 +19,10 @@ import { MaterialIcons } from "@expo/vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { timeOptions } from "@/utils/constants";
 import { styles } from "./EditDoctorScheduler.styles";
+import api from "@/api/api";
+import { useAuth } from "@/hooks/useAuth";
+import { getMyProfessionalProfile } from "@/api/professional";
+import navigation from "@/navigation";
 interface WorkSchedule {
   [key: string]: {
     enabled: boolean;
@@ -35,6 +42,8 @@ const daysOfWeek = [
 ];
 
 export default function EditDoctorScheduler() {
+  const { user } = useAuth();
+  const navigation = useNavigation();
   const [workSchedule, setWorkSchedule] = useState<WorkSchedule>({
     monday: { enabled: true, startTime: "08:00", endTime: "17:00" },
     tuesday: { enabled: true, startTime: "08:00", endTime: "17:00" },
@@ -52,6 +61,70 @@ export default function EditDoctorScheduler() {
     only_presential: false,
     modality: "online",
   });
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Fetch professional profile data on mount
+  useEffect(() => {
+    const fetchProfileData = async () => {
+      try {
+        setIsLoading(true);
+        const profile = await getMyProfessionalProfile();
+
+        // Populate service settings
+        setServiceSettings({
+          services: profile.services.join(", ") || "",
+          price: profile.price ? profile.price.toString() : "",
+          only_online: profile.onlyOnline || false,
+          only_presential: profile.onlyPresential || false,
+          modality: profile.onlyOnline
+            ? "online"
+            : profile.onlyPresential
+            ? "presential"
+            : "hybrid",
+        });
+
+        // Populate work schedule from available days
+        if (
+          profile.availableDaysOfWeek &&
+          profile.availableDaysOfWeek.length > 0
+        ) {
+          const newSchedule: WorkSchedule = {
+            monday: { enabled: false, startTime: "08:00", endTime: "17:00" },
+            tuesday: { enabled: false, startTime: "08:00", endTime: "17:00" },
+            wednesday: { enabled: false, startTime: "08:00", endTime: "17:00" },
+            thursday: { enabled: false, startTime: "08:00", endTime: "17:00" },
+            friday: { enabled: false, startTime: "08:00", endTime: "17:00" },
+            saturday: { enabled: false, startTime: "08:00", endTime: "12:00" },
+            sunday: { enabled: false, startTime: "08:00", endTime: "12:00" },
+          };
+
+          // Enable the days from the profile
+          profile.availableDaysOfWeek.forEach((day) => {
+            if (newSchedule[day]) {
+              newSchedule[day] = {
+                enabled: true,
+                startTime: profile.startHour || "08:00",
+                endTime: profile.endHour || "17:00",
+              };
+            }
+          });
+
+          setWorkSchedule(newSchedule);
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        Alert.alert("Erro", "Não foi possível carregar os dados do perfil.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchProfileData();
+    }
+  }, [user]);
 
   const handleDayToggle = (day: string, enabled: boolean) => {
     setWorkSchedule((prev) => ({
@@ -87,6 +160,125 @@ export default function EditDoctorScheduler() {
       return total + (end - start);
     }, 0);
   };
+
+  const transformScheduleForBackend = () => {
+    // Get enabled days
+    const enabledDays = Object.entries(workSchedule)
+      .filter(([_, day]) => day.enabled)
+      .map(([key, _]) => key);
+
+    // Get the most common start and end times from enabled days
+    const enabledSchedules = Object.entries(workSchedule)
+      .filter(([_, day]) => day.enabled)
+      .map(([_, day]) => ({ startTime: day.startTime, endTime: day.endTime }));
+
+    // Use the first enabled day's times, or default times if none enabled
+    const startHour =
+      enabledSchedules.length > 0 ? enabledSchedules[0].startTime : "08:00";
+    const endHour =
+      enabledSchedules.length > 0 ? enabledSchedules[0].endTime : "17:00";
+
+    return {
+      available_days_of_week: enabledDays.join(","),
+      start_hour: startHour,
+      end_hour: endHour,
+    };
+  };
+
+  const handleSaveConfiguration = async () => {
+    try {
+      setIsSaving(true);
+
+      // Validate required fields
+      if (!serviceSettings.services || serviceSettings.services.trim() === "") {
+        Alert.alert("Erro", "Por favor, informe os serviços oferecidos.");
+        return;
+      }
+
+      if (!serviceSettings.price || serviceSettings.price.trim() === "") {
+        Alert.alert("Erro", "Por favor, informe o preço da consulta.");
+        return;
+      }
+
+      // Check if at least one day is enabled
+      const hasEnabledDays = Object.values(workSchedule).some(
+        (day) => day.enabled
+      );
+      if (!hasEnabledDays) {
+        Alert.alert(
+          "Erro",
+          "Por favor, selecione pelo menos um dia de atendimento."
+        );
+        return;
+      }
+
+      // Transform schedule data
+      const scheduleData = transformScheduleForBackend();
+
+      // Parse price (remove any non-numeric characters except comma and dot)
+      const priceValue = parseFloat(
+        serviceSettings.price.replace(",", ".").replace(/[^0-9.]/g, "")
+      );
+
+      if (isNaN(priceValue) || priceValue < 0) {
+        Alert.alert("Erro", "Por favor, informe um preço válido.");
+        return;
+      }
+
+      // Prepare data for API
+      const updateData = {
+        services: serviceSettings.services,
+        price: priceValue,
+        only_online: serviceSettings.only_online,
+        only_presential: serviceSettings.only_presential,
+        available_days_of_week: scheduleData.available_days_of_week,
+        start_hour: scheduleData.start_hour,
+        end_hour: scheduleData.end_hour,
+      };
+
+      // Send to backend
+      const response = await api.put("/professionals/me", updateData);
+
+      Alert.alert("Sucesso!", "Suas configurações foram salvas com sucesso.", [
+        {
+          text: "OK",
+          style: "default",
+        },
+      ]);
+      navigation.goBack();
+    } catch (error: any) {
+      console.error("Error saving configuration:", error);
+
+      let errorMessage =
+        "Não foi possível salvar as configurações. Tente novamente.";
+
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      Alert.alert("Erro", errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={{ marginTop: 16, color: "#6b7280" }}>
+          Carregando configurações...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -363,12 +555,20 @@ export default function EditDoctorScheduler() {
           style={({ pressed }) => [
             styles.saveButton,
             pressed && styles.saveButtonPressed,
+            isSaving && styles.saveButtonDisabled,
           ]}
-          onPress={() => alert("Configurações salvas com sucesso!")}
+          onPress={handleSaveConfiguration}
+          disabled={isSaving}
         >
           <View style={styles.saveButtonContent}>
-            <Ionicons name="checkmark-circle" size={22} color="#fff" />
-            <Text style={styles.saveText}>Salvar Configurações</Text>
+            {isSaving ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="checkmark-circle" size={22} color="#fff" />
+            )}
+            <Text style={styles.saveText}>
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
+            </Text>
           </View>
         </Pressable>
       </View>

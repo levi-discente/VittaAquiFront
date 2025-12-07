@@ -1,15 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfessionalProfileByUserId } from "@/hooks/useProfessionals";
 import { isProfileIncomplete } from "@/utils/professional";
 import { router, useNavigation } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import GeneralInfoCard from "@/components/ui/GeneralInfoCard";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { Progress } from "@/components/ui/Progress";
@@ -20,110 +23,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { ProfessionalStackParamList } from "@/navigation/ProfessionalStack";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { styles } from "./Home.styles";
-
-const monthlyConsultations = [
-  { month: "Janeiro", consultas: 45, novas: 12 },
-  { month: "Fevereiro", consultas: 52, novas: 15 },
-  { month: "Março", consultas: 48, novas: 10 },
-  { month: "Abril", consultas: 60, novas: 18 },
-  { month: "Maio", consultas: 30, novas: 5 },
-];
-
-const maxConsultas = Math.max(...monthlyConsultations.map((m) => m.consultas));
-
-const recentPatients = [
-  {
-    id: 1,
-    avatar: "A",
-    nome: "Ana Silva",
-    idade: 28,
-    ultimaConsulta: "2025-09-20T10:30:00Z",
-    proximaConsulta: "2025-10-05T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 2,
-    avatar: "B",
-    nome: "Bruno Santos",
-    idade: 35,
-    ultimaConsulta: "2025-09-18T09:00:00Z",
-    proximaConsulta: "2025-10-10T16:30:00Z",
-    status: "Ativo" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 3,
-    avatar: "C",
-    nome: "Carla Mendes",
-    idade: 42,
-    ultimaConsulta: "2025-09-22T11:15:00Z",
-    proximaConsulta: "2025-10-12T13:00:00Z",
-    status: "Pendente" as const,
-    prioridade: "Baixa" as const,
-  },
-  {
-    id: 4,
-    avatar: "D",
-    nome: "Daniel Oliveira",
-    idade: 50,
-    ultimaConsulta: "2025-09-15T08:45:00Z",
-    proximaConsulta: "2025-10-08T10:30:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 5,
-    avatar: "E",
-    nome: "Eduarda Costa",
-    idade: 31,
-    ultimaConsulta: "2025-09-21T14:00:00Z",
-    proximaConsulta: "2025-10-06T15:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 6,
-    avatar: "F",
-    nome: "Felipe Rocha",
-    idade: 27,
-    ultimaConsulta: "2025-09-19T13:30:00Z",
-    proximaConsulta: "2025-10-11T09:00:00Z",
-    status: "Inativo" as const,
-    prioridade: "Baixa" as const,
-  },
-  {
-    id: 7,
-    avatar: "G",
-    nome: "Gabriela Oliveira",
-    idade: 29,
-    ultimaConsulta: "2025-09-25T12:00:00Z",
-    proximaConsulta: "2025-10-15T11:45:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-
-  {
-    id: 9,
-    avatar: "I",
-    nome: "Isabelia Costa",
-    idade: 25,
-    ultimaConsulta: "2025-09-22T11:30:00Z",
-    proximaConsulta: "2025-10-22T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 10,
-    avatar: "J",
-    nome: "Juliana Costa",
-    idade: 28,
-    ultimaConsulta: "2025-09-20T10:30:00Z",
-    proximaConsulta: "2025-10-05T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-];
+import {
+  getDashboardStats,
+  getMonthlyConsultations,
+  getRecentPatients,
+  DashboardStats,
+  MonthlyConsultation,
+  PatientSummary,
+} from "@/api/dashboard";
 
 type NavigationProp = NativeStackNavigationProp<
   ProfessionalStackParamList,
@@ -135,11 +42,75 @@ const ProfessionalHomeScreen = () => {
   const { profile, loading } = useProfessionalProfileByUserId(
     Number(user?.id) ?? 0
   );
+  console.log(user);
   const navigation = useNavigation<NavigationProp>();
+
+  // State for dashboard data
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
+    null
+  );
+  const [monthlyConsultations, setMonthlyConsultations] = useState<
+    MonthlyConsultation[]
+  >([]);
+  const [recentPatients, setRecentPatients] = useState<PatientSummary[]>([]);
+  const [loadingData, setLoadingData] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const maxConsultas =
+    monthlyConsultations.length > 0
+      ? Math.max(...monthlyConsultations.map((m) => m.consultas))
+      : 1;
 
   const handleViewAllPatients = () => {
     navigation.navigate("AllPatients");
   };
+
+  // Fetch dashboard data function
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      setLoadingData(true);
+      setError(null);
+
+      const [stats, consultations, patients] = await Promise.all([
+        getDashboardStats(),
+        getMonthlyConsultations(),
+        getRecentPatients(10),
+      ]);
+
+      setDashboardStats(stats);
+      setMonthlyConsultations(consultations);
+      setRecentPatients(patients);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError("Erro ao carregar dados do dashboard");
+    } finally {
+      setLoadingData(false);
+    }
+  }, []);
+
+  // Fetch data on mount
+  useEffect(() => {
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user, fetchDashboardData]);
+
+  // Refetch data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchDashboardData();
+      }
+    }, [user, fetchDashboardData])
+  );
+
+  // Pull to refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     if (!loading && profile && isProfileIncomplete(profile)) {
@@ -152,8 +123,46 @@ const ProfessionalHomeScreen = () => {
     }
   }, [profile, loading]);
 
+  if (loadingData || loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={{ marginTop: 16, color: "#6b7280" }}>
+          Carregando dashboard...
+        </Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 16,
+        }}
+      >
+        <MaterialIcons name="error-outline" size={48} color="#ef4444" />
+        <Text style={{ marginTop: 16, color: "#ef4444", textAlign: "center" }}>
+          {error}
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <ScrollView>
+    <ScrollView
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#4f46e5"]}
+          tintColor="#4f46e5"
+        />
+      }
+    >
       <View style={{ padding: 16 }}>
         {/* Header Section with Gradient */}
         <LinearGradient
@@ -214,14 +223,18 @@ const ProfessionalHomeScreen = () => {
               </View>
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>R$ 3.450,00</Text>
+              <Text style={styles.statValue}>
+                R${" "}
+                {dashboardStats?.todayRevenue.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </Text>
               <View style={styles.statFooter}>
-                <Ionicons
-                  name="arrow-up"
-                  size={12}
-                  color="rgba(255,255,255,0.8)"
-                />
-                <Text style={styles.statFooterText}>+15% vs ontem</Text>
+                <Text style={styles.statFooterText}>
+                  {dashboardStats?.todayAppointmentsCompleted || 0} consultas
+                  realizadas
+                </Text>
               </View>
             </View>
           </LinearGradient>
@@ -240,9 +253,12 @@ const ProfessionalHomeScreen = () => {
               </View>
             </View>
             <View style={styles.statContent}>
-              <Text style={styles.statValue}>12</Text>
+              <Text style={styles.statValue}>
+                {dashboardStats?.todayAppointments || 0}
+              </Text>
               <Text style={styles.statFooterText}>
-                8 realizados • 4 pendentes
+                {dashboardStats?.todayAppointmentsCompleted || 0} realizados •{" "}
+                {dashboardStats?.todayAppointmentsPending || 0} pendentes
               </Text>
             </View>
           </LinearGradient>
@@ -261,7 +277,7 @@ const ProfessionalHomeScreen = () => {
                     color: Colors.blue20,
                   }}
                 >
-                  58
+                  {dashboardStats?.monthlyConsultations || 0}
                 </Text>
                 <View
                   style={{
@@ -271,19 +287,36 @@ const ProfessionalHomeScreen = () => {
                   }}
                 >
                   <Ionicons
-                    name="arrow-up"
+                    name={
+                      dashboardStats?.monthlyConsultationsGrowth &&
+                      dashboardStats.monthlyConsultationsGrowth >= 0
+                        ? "arrow-up"
+                        : "arrow-down"
+                    }
                     size={12}
-                    color="#16a34a"
+                    color={
+                      dashboardStats?.monthlyConsultationsGrowth &&
+                      dashboardStats.monthlyConsultationsGrowth >= 0
+                        ? "#16a34a"
+                        : "#ef4444"
+                    }
                     style={{ marginRight: 4 }}
                   />
                   <Text
                     style={{
                       fontSize: 12,
-                      color: "#16a34a",
+                      color:
+                        dashboardStats?.monthlyConsultationsGrowth &&
+                        dashboardStats.monthlyConsultationsGrowth >= 0
+                          ? "#16a34a"
+                          : "#ef4444",
                       marginRight: 4,
                     }}
                   >
-                    +5%
+                    {(dashboardStats?.monthlyConsultationsGrowth ?? 0) > 0
+                      ? "+"
+                      : ""}
+                    {dashboardStats?.monthlyConsultationsGrowth ?? 0}%
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6b7280" }}>
                     em relação ao mês anterior
@@ -319,7 +352,7 @@ const ProfessionalHomeScreen = () => {
                     color: Colors.blue20,
                   }}
                 >
-                  21
+                  {dashboardStats?.newPatientsThisMonth || 0}
                 </Text>
                 <View
                   style={{
@@ -329,19 +362,34 @@ const ProfessionalHomeScreen = () => {
                   }}
                 >
                   <Ionicons
-                    name="arrow-up"
+                    name={
+                      dashboardStats?.newPatientsGrowth &&
+                      dashboardStats.newPatientsGrowth >= 0
+                        ? "arrow-up"
+                        : "arrow-down"
+                    }
                     size={12}
-                    color="#16a34a"
+                    color={
+                      dashboardStats?.newPatientsGrowth &&
+                      dashboardStats.newPatientsGrowth >= 0
+                        ? "#16a34a"
+                        : "#ef4444"
+                    }
                     style={{ marginRight: 4 }}
                   />
                   <Text
                     style={{
                       fontSize: 12,
-                      color: "#16a34a",
+                      color:
+                        dashboardStats?.newPatientsGrowth &&
+                        dashboardStats.newPatientsGrowth >= 0
+                          ? "#16a34a"
+                          : "#ef4444",
                       marginRight: 4,
                     }}
                   >
-                    +8%
+                    {(dashboardStats?.newPatientsGrowth ?? 0) > 0 ? "+" : ""}
+                    {dashboardStats?.newPatientsGrowth ?? 0}%
                   </Text>
                   <Text style={{ fontSize: 12, color: "#6b7280" }}>
                     em relação ao mês anterior
@@ -361,39 +409,6 @@ const ProfessionalHomeScreen = () => {
                 }}
               >
                 <Ionicons name="trending-up" size={18} color="#b45309" />
-              </View>
-            }
-          />
-
-          <GeneralInfoCard
-            title="Taxa de Satisfação"
-            body={
-              <>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    marginBottom: 4,
-                    color: Colors.blue20,
-                  }}
-                >
-                  98%
-                </Text>
-                <Progress value={98} />
-              </>
-            }
-            icon={
-              <View
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 16,
-                  backgroundColor: "#ffe4e6",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Ionicons name="pulse" size={18} color="#e11d48" />
               </View>
             }
           />
@@ -472,6 +487,12 @@ const ProfessionalHomeScreen = () => {
           <RecentPatientsCard
             recentPatients={recentPatients}
             onViewAll={handleViewAllPatients}
+            onPatientPress={(patientId, patientName) => {
+              navigation.navigate("PatientHistory", {
+                patientId: Number(patientId),
+                patientName,
+              });
+            }}
           />
         </View>
       </View>

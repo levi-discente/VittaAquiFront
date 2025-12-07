@@ -2,8 +2,10 @@ export interface Appointment {
   id: number;
   patient_id: number;
   patient_name?: string;
+  patient_image_url?: string;
   professional_id: number;
   professional_name?: string;
+  professional_image_url?: string;
   start_time: string;
   end_time: string;
   status: string;

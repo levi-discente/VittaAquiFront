@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,163 +8,72 @@ import {
   Platform,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { RecentPatientsCard } from "@/components/RecentPatientsCard";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-
-// Mock data - you can replace this with actual API data later
-const allPatients = [
-  {
-    id: 1,
-    avatar: "A",
-    nome: "Ana Silva",
-    email: "ana.silva@email.com",
-    idade: 28,
-    ultimaConsulta: "2025-09-20T10:30:00Z",
-    proximaConsulta: "2025-10-05T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 2,
-    avatar: "B",
-    nome: "Bruno Santos",
-    email: "bruno.santos@email.com",
-    idade: 35,
-    ultimaConsulta: "2025-09-18T09:00:00Z",
-    proximaConsulta: "2025-10-10T16:30:00Z",
-    status: "Ativo" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 3,
-    avatar: "C",
-    nome: "Carla Mendes",
-    email: "carla.mendes@email.com",
-    idade: 42,
-    ultimaConsulta: "2025-09-22T11:15:00Z",
-    proximaConsulta: "2025-10-12T13:00:00Z",
-    status: "Pendente" as const,
-    prioridade: "Baixa" as const,
-  },
-  {
-    id: 4,
-    avatar: "D",
-    nome: "Daniel Oliveira",
-    email: "daniel.oliveira@email.com",
-    idade: 50,
-    ultimaConsulta: "2025-09-15T08:45:00Z",
-    proximaConsulta: "2025-10-08T10:30:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 5,
-    avatar: "E",
-    nome: "Eduarda Costa",
-    email: "eduarda.costa@email.com",
-    idade: 31,
-    ultimaConsulta: "2025-09-21T14:00:00Z",
-    proximaConsulta: "2025-10-06T15:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 6,
-    avatar: "F",
-    nome: "Felipe Rocha",
-    email: "felipe.rocha@email.com",
-    idade: 27,
-    ultimaConsulta: "2025-09-19T13:30:00Z",
-    proximaConsulta: "2025-10-11T09:00:00Z",
-    status: "Inativo" as const,
-    prioridade: "Baixa" as const,
-  },
-  {
-    id: 7,
-    avatar: "G",
-    nome: "Gabriela Oliveira",
-    email: "gabriela.oliveira@email.com",
-    idade: 29,
-    ultimaConsulta: "2025-09-25T12:00:00Z",
-    proximaConsulta: "2025-10-15T11:45:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 8,
-    avatar: "H",
-    nome: "Henrique Alves",
-    email: "henrique.alves@email.com",
-    idade: 45,
-    ultimaConsulta: "2025-09-17T15:30:00Z",
-    proximaConsulta: "2025-10-20T10:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 9,
-    avatar: "I",
-    nome: "Isabelia Costa",
-    email: "isabelia.costa@email.com",
-    idade: 25,
-    ultimaConsulta: "2025-09-22T11:30:00Z",
-    proximaConsulta: "2025-10-22T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 10,
-    avatar: "J",
-    nome: "Juliana Costa",
-    email: "juliana.costa@email.com",
-    idade: 28,
-    ultimaConsulta: "2025-09-20T10:30:00Z",
-    proximaConsulta: "2025-10-05T14:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Alta" as const,
-  },
-  {
-    id: 11,
-    avatar: "K",
-    nome: "Karina Souza",
-    email: "karina.souza@email.com",
-    idade: 33,
-    ultimaConsulta: "2025-09-19T09:15:00Z",
-    proximaConsulta: "2025-10-18T16:30:00Z",
-    status: "Pendente" as const,
-    prioridade: "Média" as const,
-  },
-  {
-    id: 12,
-    avatar: "L",
-    nome: "Lucas Ferreira",
-    email: "lucas.ferreira@email.com",
-    idade: 38,
-    ultimaConsulta: "2025-09-16T14:45:00Z",
-    proximaConsulta: "2025-10-25T11:00:00Z",
-    status: "Ativo" as const,
-    prioridade: "Baixa" as const,
-  },
-];
+import { getAllPatients, PatientSummary } from "@/api/dashboard";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { ProfessionalStackParamList } from "@/navigation/ProfessionalStack";
+import { RouteProp } from "@react-navigation/native";
 
 type SortOrder = "asc" | "desc" | "none";
 
 const AllPatientsScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<ProfessionalStackParamList>>();
   const [searchText, setSearchText] = useState("");
   const [sortOrder, setSortOrder] = useState<SortOrder>("none");
+  const [allPatients, setAllPatients] = useState<PatientSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fetch all patients function
+  const fetchPatients = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const patients = await getAllPatients();
+      setAllPatients(patients);
+    } catch (err) {
+      console.error('Error fetching patients:', err);
+      setError('Erro ao carregar pacientes');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch patients on mount
+  useEffect(() => {
+    fetchPatients();
+  }, [fetchPatients]);
+
+  // Refetch patients when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchPatients();
+    }, [fetchPatients])
+  );
+
+  // Pull to refresh handler
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchPatients();
+    setRefreshing(false);
+  }, [fetchPatients]);
 
   const filteredAndSortedPatients = useMemo(() => {
     let filtered = allPatients;
 
-    // Filter by name or email
+    // Filter by name
     if (searchText.trim()) {
       const search = searchText.toLowerCase();
       filtered = allPatients.filter(
         (patient) =>
-          patient.nome.toLowerCase().includes(search) ||
-          patient.email.toLowerCase().includes(search)
+          patient.nome.toLowerCase().includes(search)
       );
     }
 
@@ -178,7 +87,7 @@ const AllPatientsScreen = () => {
     }
 
     return filtered;
-  }, [searchText, sortOrder]);
+  }, [searchText, sortOrder, allPatients]);
 
   const toggleSortOrder = () => {
     setSortOrder((prev) => {
@@ -194,6 +103,24 @@ const AllPatientsScreen = () => {
     return "swap-vertical";
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#4f46e5" />
+        <Text style={{ marginTop: 16, color: '#6b7280' }}>Carregando pacientes...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 16 }]}>
+        <MaterialIcons name="error-outline" size={48} color="#ef4444" />
+        <Text style={{ marginTop: 16, color: '#ef4444', textAlign: 'center' }}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <KeyboardAvoidingView
@@ -203,6 +130,14 @@ const AllPatientsScreen = () => {
         <ScrollView
           keyboardShouldPersistTaps="handled"
           style={{ marginBottom: 15 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4f46e5"]}
+              tintColor="#4f46e5"
+            />
+          }
         >
           <View style={styles.content}>
             <View style={styles.header}>
@@ -224,7 +159,7 @@ const AllPatientsScreen = () => {
                 />
                 <TextInput
                   style={styles.searchInput}
-                  placeholder="Buscar por nome ou email..."
+                  placeholder="Buscar por nome..."
                   value={searchText}
                   onChangeText={setSearchText}
                   placeholderTextColor="#9ca3af"
@@ -251,7 +186,16 @@ const AllPatientsScreen = () => {
               </TouchableOpacity>
             </View>
 
-            <RecentPatientsCard recentPatients={filteredAndSortedPatients} />
+            <RecentPatientsCard 
+              recentPatients={filteredAndSortedPatients}
+              onPatientPress={(patientId, patientName, patientImageUrl) => {
+                navigation.navigate("PatientHistory", {
+                  patientId: Number(patientId),
+                  patientName,
+                  patientImageUrl,
+                });
+              }}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

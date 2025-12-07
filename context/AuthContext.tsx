@@ -21,6 +21,7 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (data: RegisterData) => Promise<void>;
   signOut: () => Promise<void>;
+  updateUser: (userData: User) => void;
 }
 
 export const AuthContext = createContext<AuthContextProps>({
@@ -31,7 +32,8 @@ export const AuthContext = createContext<AuthContextProps>({
   error: null,
   signIn: async () => { },
   signUp: async () => { },
-  signOut: async () => { }
+  signOut: async () => { },
+  updateUser: () => { },
 });
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -118,6 +120,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, []);
 
+  // 5) updateUser: atualiza dados do usuário no estado e storage
+  const updateUser = useCallback(async (userData: User) => {
+    setUser(userData);
+    await AsyncStorage.setItem('@vittaaqui:user', JSON.stringify(userData));
+  }, []);
+
   const contextValue = useMemo((): AuthContextProps => ({
     user,
     token,
@@ -127,7 +135,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     signIn,
     signUp,
     signOut,
-  }), [user, token, initializing, loading, error, signIn, signUp, signOut]);
+    updateUser,
+  }), [user, token, initializing, loading, error, signIn, signUp, signOut, updateUser]);
 
   return (
     <AuthContext.Provider value={contextValue}>

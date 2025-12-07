@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { Card, Colors } from 'react-native-ui-lib';
 import { ProfessionalProfile } from '../types/professional';
+import { Avatar } from './ui/Avatar';
 
 const CATEGORY_LABELS: Record<string, string> = {
   doctor: 'Médico',
@@ -33,6 +34,7 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
     tags,
     onlyOnline,
     onlyPresential,
+    imageUrl,
   } = profile;
 
   return (
@@ -44,8 +46,18 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
         </Text>
       </View>
 
-      {/* Título */}
-      <Text style={styles.name}>{userName}</Text>
+      {/* Profile Image and Title */}
+      <View style={styles.header}>
+        <Avatar
+          imageUrl={imageUrl}
+          size={60}
+          borderColor={Colors.blue30}
+          borderWidth={2}
+        />
+        <View style={styles.headerText}>
+          <Text style={styles.name}>{userName}</Text>
+        </View>
+      </View>
 
       {/* Bio */}
       {bio ? <Text style={styles.bio}>{bio}</Text> : null}
@@ -113,10 +125,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  headerText: {
+    flex: 1,
+    marginLeft: 12,
+  },
   name: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 0,
   },
   bio: {
     fontSize: 14,
