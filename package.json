@@ -60,7 +60,7 @@
     "react-native-svg": "15.12.1",
     "react-native-svg-transformer": "^1.5.1",
     "react-native-table-component": "^1.2.2",
-    "react-native-ui-lib": "^7.45.0",
+    "react-native-ui-lib": "^8.0.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.15.0",
@@ -83,6 +83,7 @@
     "@types/react-native-table-component": "^1.2.8",
     "@types/react-native-vector-icons": "^6.4.18",
     "@types/yup": "^0.29.14",
+    "babel-preset-expo": "^54.0.8",
     "eslint": "^9.25.0"
   },
   "private": true

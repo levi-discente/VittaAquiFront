@@ -54,6 +54,11 @@ export default function EditDoctorScheduler() {
     sunday: { enabled: false, startTime: "08:00", endTime: "12:00" },
   });
 
+  const [globalSchedule, setGlobalSchedule] = useState({
+    startTime: "08:00",
+    endTime: "17:00",
+  });
+
   const [serviceSettings, setServiceSettings] = useState({
     services: "",
     price: "",
@@ -85,6 +90,12 @@ export default function EditDoctorScheduler() {
             : "hybrid",
         });
 
+        // Populate global schedule times
+        setGlobalSchedule({
+          startTime: profile.startHour || "08:00",
+          endTime: profile.endHour || "17:00",
+        });
+
         // Populate work schedule from available days
         if (
           profile.availableDaysOfWeek &&
@@ -103,11 +114,7 @@ export default function EditDoctorScheduler() {
           // Enable the days from the profile
           profile.availableDaysOfWeek.forEach((day) => {
             if (newSchedule[day]) {
-              newSchedule[day] = {
-                enabled: true,
-                startTime: profile.startHour || "08:00",
-                endTime: profile.endHour || "17:00",
-              };
+              newSchedule[day].enabled = true;
             }
           });
 
@@ -167,21 +174,10 @@ export default function EditDoctorScheduler() {
       .filter(([_, day]) => day.enabled)
       .map(([key, _]) => key);
 
-    // Get the most common start and end times from enabled days
-    const enabledSchedules = Object.entries(workSchedule)
-      .filter(([_, day]) => day.enabled)
-      .map(([_, day]) => ({ startTime: day.startTime, endTime: day.endTime }));
-
-    // Use the first enabled day's times, or default times if none enabled
-    const startHour =
-      enabledSchedules.length > 0 ? enabledSchedules[0].startTime : "08:00";
-    const endHour =
-      enabledSchedules.length > 0 ? enabledSchedules[0].endTime : "17:00";
-
     return {
       available_days_of_week: enabledDays.join(","),
-      start_hour: startHour,
-      end_hour: endHour,
+      start_hour: globalSchedule.startTime,
+      end_hour: globalSchedule.endTime,
     };
   };
 
@@ -347,7 +343,7 @@ export default function EditDoctorScheduler() {
           {/* Services and Pricing */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>💰 Serviços e Preços</Text>
+              <Text style={styles.cardTitle}>Serviços e Preços</Text>
               <Text style={styles.cardDescription}>
                 Configure seus serviços e valores de consulta
               </Text>
@@ -366,7 +362,7 @@ export default function EditDoctorScheduler() {
                 }
               />
               <Text style={styles.helperText}>
-                💡 Separe os serviços por vírgula
+                Separe os serviços por vírgula
               </Text>
             </View>
 
@@ -388,7 +384,7 @@ export default function EditDoctorScheduler() {
           {/* Modality Section */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>🏥 Modalidade de Atendimento</Text>
+              <Text style={styles.cardTitle}>Modalidade de Atendimento</Text>
               <Text style={styles.cardDescription}>
                 Escolha como você atende seus pacientes
               </Text>
@@ -482,6 +478,69 @@ export default function EditDoctorScheduler() {
             <Text style={styles.sectionTitle}>Horários de Atendimento</Text>
           </View>
 
+          {/* Global Time Settings */}
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Horário de Trabalho</Text>
+              <Text style={styles.cardDescription}>
+                Define o horário que se aplica a todos os dias de trabalho
+              </Text>
+            </View>
+
+            <View style={styles.timeRow}>
+              <View style={styles.timePickerContainer}>
+                <Text style={styles.timeLabel}>Início</Text>
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={globalSchedule.startTime}
+                    style={styles.picker}
+                    onValueChange={(val) =>
+                      setGlobalSchedule((prev) => ({ ...prev, startTime: val }))
+                    }
+                  >
+                    {timeOptions.map((time) => (
+                      <Picker.Item key={time} label={time} value={time} />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+
+              <View style={styles.timePickerContainer}>
+                <Text style={styles.timeLabel}>Término</Text>
+                <View style={styles.pickerWrapper}>
+                  <Picker
+                    selectedValue={globalSchedule.endTime}
+                    style={styles.picker}
+                    onValueChange={(val) =>
+                      setGlobalSchedule((prev) => ({ ...prev, endTime: val }))
+                    }
+                  >
+                    {timeOptions.map((time) => (
+                      <Picker.Item key={time} label={time} value={time} />
+                    ))}
+                  </Picker>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Days of Week Selection */}
+          <View style={styles.sectionHeader}>
+            <View
+              style={[
+                styles.sectionIconContainer,
+                { backgroundColor: "#dbeafe" },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="calendar-check"
+                size={20}
+                color="#1e40af"
+              />
+            </View>
+            <Text style={styles.sectionTitle}>Dias de Atendimento</Text>
+          </View>
+
           {daysOfWeek.map((day) => {
             const isEnabled = workSchedule[day.key].enabled;
             return (
@@ -505,44 +564,6 @@ export default function EditDoctorScheduler() {
                     thumbColor={isEnabled ? "#7c3aed" : "#f3f4f6"}
                   />
                 </View>
-
-                {isEnabled && (
-                  <View style={styles.timeRow}>
-                    <View style={styles.timePickerContainer}>
-                      <Text style={styles.timeLabel}>Início</Text>
-                      <View style={styles.pickerWrapper}>
-                        <Picker
-                          selectedValue={workSchedule[day.key].startTime}
-                          style={styles.picker}
-                          onValueChange={(val) =>
-                            handleTimeChange(day.key, "startTime", val)
-                          }
-                        >
-                          {timeOptions.map((time) => (
-                            <Picker.Item key={time} label={time} value={time} />
-                          ))}
-                        </Picker>
-                      </View>
-                    </View>
-
-                    <View style={styles.timePickerContainer}>
-                      <Text style={styles.timeLabel}>Término</Text>
-                      <View style={styles.pickerWrapper}>
-                        <Picker
-                          selectedValue={workSchedule[day.key].endTime}
-                          style={styles.picker}
-                          onValueChange={(val) =>
-                            handleTimeChange(day.key, "endTime", val)
-                          }
-                        >
-                          {timeOptions.map((time) => (
-                            <Picker.Item key={time} label={time} value={time} />
-                          ))}
-                        </Picker>
-                      </View>
-                    </View>
-                  </View>
-                )}
               </View>
             );
           })}

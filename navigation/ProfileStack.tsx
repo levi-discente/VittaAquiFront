@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { LogoTitle } from "@/components/ui/logo";
 import HomeScreen from "@/screens/Patient/Home";
 import AppointmentsScreen from "@/screens/Common/AppointmentsScreen";
+import AppointmentDetailScreen from "@/screens/Common/AppointmentDetailScreen";
 import ProfessionalDetailScreen from "@/screens/Patient/ProfessionalDetailScreen";
 import ProfileScreen from "@/screens/Common/ProfileScreen";
 import ChatScreen from "@/screens/Common/ChatScreen";
@@ -14,6 +15,7 @@ import { Appointment } from "@/types/appointment";
 export type ProfileStackParamList = {
   Home: undefined;
   Appointments: undefined;
+  AppointmentDetail: { appointment: Appointment };
   ProfessionalDetail: { profileId: string };
   Profile: undefined;
   Chat: { appointment: Appointment };
@@ -46,6 +48,12 @@ const ProfileStack: React.FC<ProfileStackProps> = ({ initialScreen }) => (
         headerLeft: LogoTitle,
         headerRight: () => <AvatarMenu />,
       }}
+    />
+
+    <Stack.Screen
+      name="AppointmentDetail"
+      component={AppointmentDetailScreen}
+      options={{ title: "Detalhes do Agendamento" }}
     />
 
     <Stack.Screen

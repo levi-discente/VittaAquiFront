@@ -1,30 +1,30 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions
-} from 'react-native';
-import { Card, Colors } from 'react-native-ui-lib';
-import { ProfessionalProfile } from '../types/professional';
-import { Avatar } from './ui/Avatar';
+import React from "react";
+import { View, Text, StyleSheet, Dimensions } from "react-native";
+import { Card, Colors } from "react-native-ui-lib";
+import { ProfessionalProfile } from "../types/professional";
+import { Avatar } from "./ui/Avatar";
 
 const CATEGORY_LABELS: Record<string, string> = {
-  doctor: 'Médico',
-  nutritionist: 'Nutricionista',
-  psychologist: 'Psicólogo',
-  physician: 'Psiquiatra',
-  personal_trainer: 'Personal Trainer',
+  doctor: "Médico",
+  nutritionist: "Nutricionista",
+  psychologist: "Psicólogo",
+  physician: "Psiquiatra",
+  personal_trainer: "Personal Trainer",
+  physiotherapist: "Fisioterapeuta",
+  occupational_therapy: "Terapia Ocupacional",
+  elderly_care: "Cuidado de Idosos",
 };
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH = Dimensions.get("window").width;
 const CARD_WIDTH = Math.min(SCREEN_WIDTH * 0.9, 400);
 
 interface ProfessionalCardProps {
   profile: ProfessionalProfile;
 }
 
-export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) => {
+export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({
+  profile,
+}) => {
   const {
     userName,
     category,
@@ -64,9 +64,7 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
 
       {/* Serviços */}
       {services && services.length > 0 && (
-        <Text style={styles.services}>
-          Serviços: {services.join(', ')}
-        </Text>
+        <Text style={styles.services}>Serviços: {services.join(", ")}</Text>
       )}
 
       {/* Preço */}
@@ -77,7 +75,7 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
       {/* Tags */}
       {tags && tags.length > 0 && (
         <View style={styles.tagsContainer}>
-          {tags.map(tag => (
+          {tags.map((tag) => (
             <View key={tag} style={styles.tag}>
               <Text style={styles.tagText}>#{tag}</Text>
             </View>
@@ -88,13 +86,20 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
       {/* Indicadores online/presencial */}
       <View style={styles.flags}>
         {onlyOnline != null && (
-          <Text style={[styles.flag, onlyOnline ? styles.online : styles.offline]}>
-            {onlyOnline ? 'Somente Online' : ''}
+          <Text
+            style={[styles.flag, onlyOnline ? styles.online : styles.offline]}
+          >
+            {onlyOnline ? "Somente Online" : ""}
           </Text>
         )}
         {onlyPresential != null && (
-          <Text style={[styles.flag, onlyPresential ? styles.presential : styles.offline]}>
-            {onlyPresential ? 'Somente Presencial' : ''}
+          <Text
+            style={[
+              styles.flag,
+              onlyPresential ? styles.presential : styles.offline,
+            ]}
+          >
+            {onlyPresential ? "Somente Presencial" : ""}
           </Text>
         )}
       </View>
@@ -104,15 +109,15 @@ export const ProfessionalCard: React.FC<ProfessionalCardProps> = ({ profile }) =
 
 const styles = StyleSheet.create({
   card: {
-    position: 'relative',
+    position: "relative",
     marginVertical: 8,
     padding: 16,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     elevation: 2,
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: 8,
     right: 8,
     backgroundColor: Colors.blue30,
@@ -121,13 +126,13 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   badgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
     marginTop: 8,
   },
@@ -137,7 +142,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: 0,
   },
   bio: {
@@ -151,12 +156,12 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 8,
   },
   tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: 8,
   },
   tag: {
@@ -172,16 +177,15 @@ const styles = StyleSheet.create({
     color: Colors.blue5,
   },
   flags: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 8,
   },
   flag: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginRight: 12,
   },
   online: { color: Colors.green30 },
   presential: { color: Colors.blue30 },
   offline: { color: Colors.red30 },
 });
-

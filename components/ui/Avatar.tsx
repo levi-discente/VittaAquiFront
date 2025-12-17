@@ -1,7 +1,13 @@
-import React from 'react';
-import { TouchableOpacity, Image, View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Colors } from 'react-native-ui-lib';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import React from "react";
+import {
+  TouchableOpacity,
+  Image,
+  View,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { Colors } from "react-native-ui-lib";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 interface AvatarProps {
   imageUrl?: string | null;
@@ -74,19 +80,15 @@ export const Avatar: React.FC<AvatarProps> = ({
       {imageUrl ? (
         <Image source={{ uri: imageUrl }} style={imageStyle} />
       ) : (
-        <Ionicons
-          name="person-circle"
-          size={iconSize}
-          color={Colors.grey40}
-        />
+        <Ionicons name="person-circle" size={iconSize} color={Colors.grey40} />
       )}
-      
+
       {loading && (
         <View style={loadingOverlayStyle}>
           <ActivityIndicator size="small" color={Colors.white} />
         </View>
       )}
-      
+
       {showCamera && !loading && (
         <View style={cameraIconStyle}>
           <Ionicons name="camera" size={cameraIconSize} color={Colors.white} />
@@ -108,24 +110,24 @@ export const Avatar: React.FC<AvatarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
   },
   image: {
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   loadingOverlay: {
-    position: 'absolute',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   cameraIcon: {
-    position: 'absolute',
+    position: "absolute",
     backgroundColor: Colors.blue30,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 2,
     borderColor: Colors.white,
   },
