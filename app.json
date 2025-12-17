@@ -4,7 +4,7 @@
     "slug": "VittaAqui_frontend",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/favicon.svg",
     "scheme": "vittaaquifrontend",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -15,10 +15,9 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/favicon.svg",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true,
       "jsEngine": "hermes",
       "package": "com.matheusvinicius8.VittaAqui_frontend"
     },

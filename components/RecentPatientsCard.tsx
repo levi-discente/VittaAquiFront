@@ -28,7 +28,11 @@ type Patient = {
 type Props = {
   recentPatients: Patient[];
   onViewAll?: () => void;
-  onPatientPress?: (patientId: string | number, patientName: string, patientImageUrl?: string) => void;
+  onPatientPress?: (
+    patientId: string | number,
+    patientName: string,
+    patientImageUrl?: string
+  ) => void;
 };
 
 export const RecentPatientsCard: React.FC<Props> = ({
@@ -52,7 +56,9 @@ export const RecentPatientsCard: React.FC<Props> = ({
       <TouchableOpacity
         key={patient.id}
         style={[styles.customRow, index % 2 === 1 && styles.customRowAlt]}
-        onPress={() => onPatientPress?.(patient.id, patient.nome, patient.profile_image_url)}
+        onPress={() =>
+          onPatientPress?.(patient.id, patient.nome, patient.profile_image_url)
+        }
         activeOpacity={0.7}
       >
         {/* Paciente com Avatar */}
@@ -94,7 +100,13 @@ export const RecentPatientsCard: React.FC<Props> = ({
           <View style={styles.actionsContainer}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => onPatientPress?.(patient.id, patient.nome, patient.profile_image_url)}
+              onPress={() =>
+                onPatientPress?.(
+                  patient.id,
+                  patient.nome,
+                  patient.profile_image_url
+                )
+              }
             >
               <Ionicons
                 name="document-text-outline"

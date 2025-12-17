@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Image,
+  Linking,
 } from "react-native";
 import { useRoute, useNavigation, RouteProp } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,7 +24,7 @@ import {
   uploadChatFile,
   BackendChatMessage,
 } from "@/api/chat";
-// import * as DocumentPicker from "expo-document-picker";
+import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 
 type ChatScreenRouteProp = RouteProp<
@@ -279,12 +281,14 @@ export default function ChatScreen() {
 
   const pickDocument = async () => {
     try {
-      // Temporarily use image picker for documents until DocumentPicker is fixed
-      Alert.alert(
-        "Seleção de Documentos",
-        "Por enquanto, use a opção 'Galeria' para enviar arquivos. Seleção de documentos será habilitada em breve!",
-        [{ text: "OK" }]
-      );
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets[0]) {
+        await uploadFile(result.assets[0]);
+      }
     } catch (error) {
       console.error("Error picking document:", error);
       Alert.alert("Erro", "Não foi possível selecionar o documento");
@@ -379,56 +383,123 @@ export default function ChatScreen() {
 
         {/* File attachment */}
         {item.file_url && (
-          <TouchableOpacity
-            style={styles.fileAttachment}
-            onPress={() => {
-              Alert.alert(
-                "Arquivo",
-                `${item.file_name}\nTamanho: ${formatFileSize(
-                  item.file_size || 0
-                )}`,
-                [
-                  { text: "Cancelar", style: "cancel" },
-                  {
-                    text: "Abrir",
-                    onPress: () => {
-                      // TODO: Implement file opening/downloading
-                      Alert.alert(
-                        "Em breve",
-                        "Abertura de arquivos será implementada em breve!"
-                      );
+          <View>
+            {/* Image preview */}
+            {item.file_type?.startsWith("image/") ? (
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert("Imagem", item.file_name || "Imagem", [
+                    { text: "Cancelar", style: "cancel" },
+                    {
+                      text: "Abrir",
+                      onPress: async () => {
+                        try {
+                          const supported = await Linking.canOpenURL(
+                            item.file_url!
+                          );
+                          if (supported) {
+                            await Linking.openURL(item.file_url!);
+                          } else {
+                            Alert.alert(
+                              "Erro",
+                              "Não foi possível abrir a imagem"
+                            );
+                          }
+                        } catch (error) {
+                          console.error("Error opening image:", error);
+                          Alert.alert(
+                            "Erro",
+                            "Não foi possível abrir a imagem"
+                          );
+                        }
+                      },
                     },
-                  },
-                ]
-              );
-            }}
-          >
-            <View style={styles.fileIcon}>
-              <Ionicons
-                name={getFileIcon(item.file_type)}
-                size={24}
-                color={item.isOwn ? "#fff" : "#007AFF"}
-              />
-            </View>
-            <View style={styles.fileInfo}>
-              <Text
-                style={[
-                  styles.fileName,
-                  item.isOwn ? styles.ownText : styles.otherText,
-                ]}
+                  ]);
+                }}
               >
-                {item.file_name}
-              </Text>
-              <Text
-                style={[
-                  styles.fileSize,
-                  item.isOwn ? styles.ownText : styles.otherText,
-                ]}
+                <Image
+                  source={{ uri: item.file_url }}
+                  style={styles.imagePreview}
+                  resizeMode="cover"
+                />
+                {item.file_name && (
+                  <Text
+                    style={[
+                      styles.imageCaption,
+                      item.isOwn ? styles.ownText : styles.otherText,
+                    ]}
+                  >
+                    {item.file_name}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={styles.fileAttachment}
+                onPress={() => {
+                  Alert.alert(
+                    "Arquivo",
+                    `${item.file_name}\nTamanho: ${formatFileSize(
+                      item.file_size || 0
+                    )}`,
+                    [
+                      { text: "Cancelar", style: "cancel" },
+                      {
+                        text: "Abrir",
+                        onPress: async () => {
+                          try {
+                            const supported = await Linking.canOpenURL(
+                              item.file_url!
+                            );
+                            if (supported) {
+                              await Linking.openURL(item.file_url!);
+                            } else {
+                              Alert.alert(
+                                "Erro",
+                                "Não foi possível abrir o arquivo"
+                              );
+                            }
+                          } catch (error) {
+                            console.error("Error opening file:", error);
+                            Alert.alert(
+                              "Erro",
+                              "Não foi possível abrir o arquivo"
+                            );
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
               >
-                {formatFileSize(item.file_size || 0)}
-              </Text>
-            </View>
-          </TouchableOpacity>
+                <View style={styles.fileIcon}>
+                  <Ionicons
+                    name={getFileIcon(item.file_type)}
+                    size={24}
+                    color={item.isOwn ? "#fff" : "#007AFF"}
+                  />
+                </View>
+                <View style={styles.fileInfo}>
+                  <Text
+                    style={[
+                      styles.fileName,
+                      item.isOwn ? styles.ownText : styles.otherText,
+                    ]}
+                  >
+                    {item.file_name}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.fileSize,
+                      item.isOwn ? styles.ownText : styles.otherText,
+                    ]}
+                  >
+                    {formatFileSize(item.file_size || 0)}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          </View>
         )}
 
         {/* Text content */}
@@ -539,9 +610,6 @@ export default function ChatScreen() {
         {/* Messages list */}
         {messages.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Text style={styles.emptyIcon}>💬</Text>
-            </View>
             <Text style={styles.emptyTitle}>Nenhuma mensagem ainda</Text>
             <Text style={styles.emptySubtitle}>
               {isReadOnly
@@ -568,7 +636,7 @@ export default function ChatScreen() {
           {isReadOnly ? (
             <View style={styles.readOnlyInput}>
               <Text style={styles.readOnlyText}>
-                🔒 Chat disponível apenas para consultas confirmadas
+                Chat disponível apenas para consultas confirmadas
               </Text>
             </View>
           ) : (
@@ -892,5 +960,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.8,
     marginTop: 2,
+  },
+  imagePreview: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  imageCaption: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: "italic",
   },
 });

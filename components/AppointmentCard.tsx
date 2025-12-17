@@ -144,8 +144,8 @@ export const AppointmentCard: React.FC<AppointmentCardProps> = ({
             activeOpacity={0.8}
           >
             <View style={styles.joinMeetingContent}>
-              <Ionicons name="videocam" size={24} color="#fff" />
-              <Text style={styles.joinMeetingText}>Entrar na sala</Text>
+              <Ionicons name="chatbubbles" size={24} color="#fff" />
+              <Text style={styles.joinMeetingText}>Entrar no chat</Text>
             </View>
             {minutesDiff > 0 && (
               <Text style={styles.joinMeetingSubtext}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   TextInput,
   TouchableOpacity,
@@ -10,39 +10,38 @@ import {
   Dimensions,
   Image,
   Text as RNText,
-} from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AuthStackParamList } from '@/navigation/AuthNavigator';
-import { useAuth } from '@/hooks/useAuth';
-import { Snackbar } from '@/components/Snackbar';
-import { View, Checkbox, Text } from 'react-native-ui-lib';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthStackParamList } from "@/navigation/AuthNavigator";
+import { useAuth } from "@/hooks/useAuth";
+import { Snackbar } from "@/components/Snackbar";
+import { View, Checkbox, Text } from "react-native-ui-lib";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
-const REMEMBER_KEY = '@app:rememberedEmail';
+const REMEMBER_KEY = "@app:rememberedEmail";
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const { signIn } = useAuth();
-  const { width } = Dimensions.get('window');
+  const { width } = Dimensions.get("window");
   const CARD_WIDTH = Math.min(width * 0.9, 400);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(REMEMBER_KEY).then(stored => {
+    AsyncStorage.getItem(REMEMBER_KEY).then((stored) => {
       if (stored) {
         setEmail(stored);
         setRemember(true);
       }
     });
   }, []);
-
 
   const handleLogin = async () => {
     setLoading(true);
@@ -54,7 +53,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.removeItem(REMEMBER_KEY);
       }
     } catch (err: any) {
-      Snackbar.show({ text: err.response?.data?.message || 'Erro ao autenticar', type: 'error' });
+      Snackbar.show({
+        text: err.response?.data?.message || "Erro ao autenticar",
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -64,8 +66,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 20}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContainer}
@@ -73,7 +75,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         >
           <View style={[styles.card, { width: CARD_WIDTH }]}>
             <Image
-              source={require('@/assets/images/logo.png')}
+              source={require("@/assets/images/logo.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -99,10 +101,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               />
               <TouchableOpacity
                 style={styles.eyeButton}
-                onPress={() => setShowPassword(v => !v)}
+                onPress={() => setShowPassword((v) => !v)}
               >
                 <MaterialCommunityIcons
-                  name={showPassword ? 'eye-off' : 'eye'}
+                  name={showPassword ? "eye-off" : "eye"}
                   size={18}
                   color="#888"
                 />
@@ -120,22 +122,24 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               style={[
                 styles.button,
-                (!email || !password || loading) && styles.buttonDisabled
+                (!email || !password || loading) && styles.buttonDisabled,
               ]}
               onPress={handleLogin}
               disabled={!email || !password || loading}
             >
-              {loading
-                ? <ActivityIndicator color="#fff" />
-                : <RNText style={styles.buttonText}>Entrar</RNText>
-              }
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <RNText style={styles.buttonText}>Entrar</RNText>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <RNText style={styles.link}>Ainda não tem conta? Cadastre-se</RNText>
+            <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <RNText style={styles.link}>
+                Ainda não tem conta? Cadastre-se
+              </RNText>
             </TouchableOpacity>
           </View>
-
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -143,19 +147,19 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
+  container: { flex: 1, backgroundColor: "#fff" },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 8,
     padding: 20,
     elevation: 3,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.1,
     shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
@@ -163,54 +167,52 @@ const styles = StyleSheet.create({
   logo: {
     width: 180,
     height: 180,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginBottom: 10,
   },
   title: {
     fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
+    fontWeight: "700",
+    textAlign: "center",
     marginBottom: 20,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderRadius: 4,
     padding: 10,
     marginBottom: 12,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     padding: 12,
     borderRadius: 4,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 12,
   },
   buttonDisabled: {
-    backgroundColor: '#A0A0A0',
+    backgroundColor: "#A0A0A0",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
   },
   link: {
-    color: '#007AFF',
-    textAlign: 'center',
+    color: "#007AFF",
+    textAlign: "center",
     marginTop: 15,
   },
   flex: { flex: 1 },
   eyeButton: {
-    position: 'absolute',
+    position: "absolute",
     right: 10,
-    top: Platform.OS === 'ios' ? 14 : 12,
+    top: Platform.OS === "ios" ? 14 : 12,
   },
   inputWrapper: {
-    position: 'relative',
-    width: '100%',
+    position: "relative",
+    width: "100%",
   },
-
 });
 
 export default LoginScreen;
-

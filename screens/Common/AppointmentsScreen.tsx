@@ -242,8 +242,8 @@ export const AppointmentsScreen: React.FC<Props> = ({ navigation }) => {
               onJoinMeeting={() => {
                 // TODO: Navigate to video call screen or open meeting URL
                 Alert.alert(
-                  "Entrar na sala",
-                  `Iniciando videochamada para consulta com ${item.professional_name}`,
+                  "Entrar no chat",
+                  `Iniciando chat para consulta com ${item.professional_name}`,
                   [
                     { text: "Cancelar", style: "cancel" },
                     {

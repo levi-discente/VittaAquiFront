@@ -273,32 +273,6 @@ export default function AppointmentDetailScreen() {
             </View>
           </View>
 
-          {/* Join Meeting Button */}
-          {appointment.status === "confirmed" && (
-            <TouchableOpacity
-              style={styles.joinMeetingButton}
-              onPress={() => {
-                // TODO: Navigate to video call screen
-                Alert.alert("Entrar na sala", "Iniciando videochamada...", [
-                  { text: "Cancelar", style: "cancel" },
-                  {
-                    text: "Entrar",
-                    onPress: () => {
-                      console.log(
-                        "Joining meeting for appointment:",
-                        appointment.id
-                      );
-                    },
-                  },
-                ]);
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="videocam" size={24} color="#fff" />
-              <Text style={styles.joinMeetingButtonText}>Entrar na sala</Text>
-            </TouchableOpacity>
-          )}
-
           {/* Chat Button - Only for confirmed appointments */}
           {appointment.status === "confirmed" && (
             <TouchableOpacity
@@ -556,7 +530,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#6366f1",
+    backgroundColor: "#10b981",
     paddingVertical: 16,
     paddingHorizontal: 32,
     gap: 8,
